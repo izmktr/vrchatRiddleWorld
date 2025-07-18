@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スクレイピングデータ表示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background: #5a6fd8;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .search-box {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .data-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .data-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .item-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .item-url {
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            display: block;
+            word-break: break-all;
+        }
+
+        .item-url:hover {
+            text-decoration: underline;
+        }
+
+        .item-description {
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        .headings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .heading-tag {
+            background: #f0f2ff;
+            color: #667eea;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .item-meta {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕷️ ウェブスクレイピングデータ</h1>
+            <p>収集したウェブサイトデータの表示</p>
+        </header>
+
+        <!-- 統計情報 -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalCount">-</div>
+                <div>総データ数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="domainCount">-</div>
+                <div>ドメイン数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayCount">-</div>
+                <div>今日の収集</div>
+            </div>
+        </div>
+
+        <!-- コントロール -->
+        <div class="controls">
+            <button onclick="loadData()">🔄 データ更新</button>
+            <button onclick="exportData()">📥 CSV出力</button>
+            <input type="text" class="search-box" id="searchBox" placeholder="タイトルやURLで検索..." onkeyup="filterData()">
+        </div>
+
+        <!-- エラー表示 -->
+        <div id="errorMessage" class="error" style="display: none;"></div>
+
+        <!-- ローディング -->
+        <div id="loading" class="loading">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <!-- データ表示エリア -->
+        <div id="dataGrid" class="data-grid"></div>
+
+        <!-- 空の状態 -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <h3>📭 データがありません</h3>
+            <p>スクレイピングを実行してデータを収集してください。</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase設定（環境に応じて変更してください）
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, orderBy, query, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase設定 - 実際の設定値に変更してください
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
+        // Firebase初期化
+        let app, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            console.log('Firebase初期化完了');
+        } catch (error) {
+            console.error('Firebase初期化エラー:', error);
+            showError('Firebase設定を確認してください: ' + error.message);
+        }
+
+        let allData = [];
+        let filteredData = [];
+
+        // データ読み込み
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            try {
+                if (!db) {
+                    throw new Error('Firebaseが初期化されていません');
+                }
+
+                const q = query(
+                    collection(db, 'scraped_data'),
+                    orderBy('created_at', 'desc'),
+                    limit(100)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                allData = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    allData.push(data);
+                });
+
+                filteredData = [...allData];
+                displayData();
+                updateStats();
+                
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+                showError('データの読み込みに失敗しました: ' + error.message);
+                
+                // ダミーデータで表示（開発用）
+                loadDummyData();
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // ダミーデータ（Firebase接続前のテスト用）
+        function loadDummyData() {
+            allData = [
+                {
+                    id: '1',
+                    title: 'サンプルサイト1',
+                    url: 'https://example.com/page1',
+                    description: 'これはサンプルサイトの説明です。',
+                    headings: ['見出し1', '見出し2', '見出し3'],
+                    scraped_at: new Date().toISOString(),
+                    content_length: 1500
+                },
+                {
+                    id: '2',
+                    title: 'サンプルサイト2',
+                    url: 'https://example.com/page2',
+                    description: '別のサンプルサイトの説明です。',
+                    headings: ['メイン見出し', 'サブ見出し'],
+                    scraped_at: new Date(Date.now() - 86400000).toISOString(),
+                    content_length: 2000
+                }
+            ];
+            filteredData = [...allData];
+            displayData();
+            updateStats();
+        }
+
+        // データ表示
+        function displayData() {
+            const dataGrid = document.getElementById('dataGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filteredData.length === 0) {
+                dataGrid.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            
+            dataGrid.innerHTML = filteredData.map(item => `
+                <div class="data-item">
+                    <div class="item-title">${escapeHtml(item.title || 'タイトルなし')}</div>
+                    <a href="${item.url}" target="_blank" rel="noopener" class="item-url">${escapeHtml(item.url)}</a>
+                    <div class="item-description">${escapeHtml(item.description || '説明なし')}</div>
+                    
+                    ${item.headings && item.headings.length > 0 ? `
+                        <div class="headings">
+                            ${item.headings.slice(0, 5).map(h => `<span class="heading-tag">${escapeHtml(h)}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="item-meta">
+                        <span>収集日時: ${formatDate(item.scraped_at)}</span>
+                        <span>サイズ: ${formatFileSize(item.content_length)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 統計更新
+        function updateStats() {
+            document.getElementById('totalCount').textContent = allData.length;
+            
+            const domains = new Set(allData.map(item => {
+                try {
+                    return new URL(item.url).hostname;
+                } catch {
+                    return 'unknown';
+                }
+            }));
+            document.getElementById('domainCount').textContent = domains.size;
+
+            const today = new Date().toDateString();
+            const todayCount = allData.filter(item => {
+                try {
+                    return new Date(item.scraped_at).toDateString() === today;
+                } catch {
+                    return false;
+                }
+            }).length;
+            document.getElementById('todayCount').textContent = todayCount;
+        }
+
+        // 検索フィルター
+        function filterData() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredData = [...allData];
+            } else {
+                filteredData = allData.filter(item => 
+                    (item.title && item.title.toLowerCase().includes(searchTerm)) ||
+                    (item.url && item.url.toLowerCase().includes(searchTerm)) ||
+                    (item.description && item.description.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            displayData();
+        }
+
+        // CSV出力
+        function exportData() {
+            if (filteredData.length === 0) {
+                alert('出力するデータがありません。');
+                return;
+            }
+
+            const csv = [
+                ['タイトル', 'URL', '説明', '収集日時', 'コンテンツサイズ'],
+                ...filteredData.map(item => [
+                    item.title || '',
+                    item.url || '',
+                    item.description || '',
+                    item.scraped_at || '',
+                    item.content_length || ''
+                ])
+            ].map(row => row.map(field => `"${(field || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `scraped_data_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // エラー表示
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // ユーティリティ関数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleString('ja-JP');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // グローバル関数として公開
+        window.loadData = loadData;
+        window.exportData = exportData;
+        window.filterData = filterData;
+
+        // 初期データ読み込み
+        loadData();
+    </script>
+</body>
+</html>

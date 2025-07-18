@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRChatワールドデータ表示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .search-box, .sort-select {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-box:focus, .sort-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .world-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .world-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .world-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+        }
+
+        .world-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+        }
+
+        .world-content {
+            padding: 1.5rem;
+        }
+
+        .world-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+            line-height: 1.3;
+        }
+
+        .world-author {
+            color: #667eea;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .world-description {
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .world-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stat-icon {
+            margin-right: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .world-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .world-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .world-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .world-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🌐 VRChat World Explorer</div>
+            <div class="subtitle">VRChatワールドデータベース</div>
+        </header>
+
+        <!-- 統計情報 -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalWorlds">-</div>
+                <div class="stat-label">総ワールド数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalVisits">-</div>
+                <div class="stat-label">総訪問数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgPopularity">-</div>
+                <div class="stat-label">平均人気度</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayUpdated">-</div>
+                <div class="stat-label">今日更新</div>
+            </div>
+        </div>
+
+        <!-- コントロール -->
+        <div class="controls">
+            <div class="control-row">
+                <button onclick="loadWorlds()">🔄 データ更新</button>
+                <button onclick="loadPopularWorlds()">⭐ 人気ワールド</button>
+                <button onclick="loadRecentWorlds()">🆕 最新ワールド</button>
+                <button onclick="exportWorlds()">📥 CSV出力</button>
+            </div>
+            <div class="control-row">
+                <input type="text" class="search-box" id="searchBox" placeholder="ワールド名、作者名、タグで検索..." onkeyup="filterWorlds()">
+                <select class="sort-select" id="sortSelect" onchange="sortWorlds()">
+                    <option value="popularity">人気順</option>
+                    <option value="visits">訪問数順</option>
+                    <option value="created_at">作成日順</option>
+                    <option value="updated_at">更新日順</option>
+                    <option value="name">名前順</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- エラー表示 -->
+        <div id="errorMessage" class="error" style="display: none;"></div>
+
+        <!-- ローディング -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>VRChatワールドデータを読み込み中...</p>
+        </div>
+
+        <!-- ワールド表示エリア -->
+        <div id="worldGrid" class="world-grid"></div>
+
+        <!-- 空の状態 -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">🌍</div>
+            <h3>ワールドデータがありません</h3>
+            <p>VRChatワールドスクレイピングを実行してデータを収集してください。</p>
+        </div>
+    </div>
+
+    <script>
+        let allWorlds = [];
+        let filteredWorlds = [];
+        let currentSort = 'popularity';
+
+        // ダミーデータ（Firebase接続前のテスト用）
+        const dummyWorlds = [
+            {
+                world_id: 'wrld_test1',
+                name: 'Beautiful Sunset World',
+                author_name: 'WorldCreator123',
+                description: '美しい夕焼けが楽しめるリラックスできるワールドです。友達と一緒に素晴らしい景色を楽しみましょう。',
+                visits: 15420,
+                popularity: 98,
+                favorites: 1250,
+                capacity: 16,
+                tags: ['sunset', 'relaxing', 'scenic', 'social'],
+                image_url: '',
+                publication_date: '2024-01-15T10:00:00Z',
+                scraped_at: new Date().toISOString()
+            },
+            {
+                world_id: 'wrld_test2',
+                name: 'Cyberpunk City',
+                author_name: 'FutureBuilder',
+                description: 'ネオンライトが輝くサイバーパンクな未来都市を探索できるワールド。',
+                visits: 23580,
+                popularity: 95,
+                favorites: 1890,
+                capacity: 20,
+                tags: ['cyberpunk', 'city', 'exploration', 'neon'],
+                image_url: '',
+                publication_date: '2024-02-01T14:30:00Z',
+                scraped_at: new Date(Date.now() - 86400000).toISOString()
+            },
+            {
+                world_id: 'wrld_test3',
+                name: 'Cozy Coffee Shop',
+                author_name: 'CafeOwner',
+                description: '温かい雰囲気のコーヒーショップ。友達とのんびりおしゃべりを楽しめます。',
+                visits: 8750,
+                popularity: 85,
+                favorites: 650,
+                capacity: 12,
+                tags: ['cozy', 'coffee', 'social', 'indoor'],
+                image_url: '',
+                publication_date: '2024-01-28T09:15:00Z',
+                scraped_at: new Date(Date.now() - 172800000).toISOString()
+            }
+        ];
+
+        // データ読み込み
+        async function loadWorlds() {
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            try {
+                // TODO: Firebase接続時は実際のAPIを呼び出し
+                // const response = await fetch('/api/vrchat-worlds');
+                // const data = await response.json();
+                // allWorlds = data.worlds || [];
+                
+                // 現在はダミーデータを使用
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 読み込み時間をシミュレート
+                allWorlds = [...dummyWorlds];
+                
+                filteredWorlds = [...allWorlds];
+                displayWorlds();
+                updateStats();
+                
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+                showError('ワールドデータの読み込みに失敗しました: ' + error.message);
+                
+                // エラー時はダミーデータを表示
+                allWorlds = [...dummyWorlds];
+                filteredWorlds = [...allWorlds];
+                displayWorlds();
+                updateStats();
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // 人気ワールドを読み込み
+        function loadPopularWorlds() {
+            currentSort = 'popularity';
+            document.getElementById('sortSelect').value = 'popularity';
+            sortWorlds();
+        }
+
+        // 最新ワールドを読み込み
+        function loadRecentWorlds() {
+            currentSort = 'created_at';
+            document.getElementById('sortSelect').value = 'created_at';
+            sortWorlds();
+        }
+
+        // ワールド表示
+        function displayWorlds() {
+            const worldGrid = document.getElementById('worldGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filteredWorlds.length === 0) {
+                worldGrid.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            
+            worldGrid.innerHTML = filteredWorlds.map(world => `
+                <div class="world-card">
+                    <img src="${world.image_url || 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World'}" 
+                         alt="${escapeHtml(world.name)}" 
+                         class="world-image"
+                         onerror="this.src='https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World'">
+                    
+                    <div class="world-content">
+                        <div class="world-title">${escapeHtml(world.name)}</div>
+                        <div class="world-author">👤 ${escapeHtml(world.author_name)}</div>
+                        <div class="world-description">${escapeHtml(world.description || '説明なし')}</div>
+                        
+                        <div class="world-stats">
+                            <div class="stat-item">
+                                <span class="stat-icon">👥</span>
+                                <span>${formatNumber(world.visits)} 訪問</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">⭐</span>
+                                <span>${world.popularity}% 人気</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">❤️</span>
+                                <span>${formatNumber(world.favorites)} お気に入り</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">🏠</span>
+                                <span>定員 ${world.capacity}人</span>
+                            </div>
+                        </div>
+                        
+                        ${world.tags && world.tags.length > 0 ? `
+                            <div class="world-tags">
+                                ${world.tags.slice(0, 4).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="world-meta">
+                            <span>作成: ${formatDate(world.publication_date)}</span>
+                            <span>更新: ${formatDate(world.scraped_at)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 統計更新
+        function updateStats() {
+            const totalWorlds = allWorlds.length;
+            const totalVisits = allWorlds.reduce((sum, world) => sum + (world.visits || 0), 0);
+            const avgPopularity = totalWorlds > 0 ? Math.round(allWorlds.reduce((sum, world) => sum + (world.popularity || 0), 0) / totalWorlds) : 0;
+            
+            const today = new Date().toDateString();
+            const todayUpdated = allWorlds.filter(world => {
+                try {
+                    return new Date(world.scraped_at).toDateString() === today;
+                } catch {
+                    return false;
+                }
+            }).length;
+
+            document.getElementById('totalWorlds').textContent = formatNumber(totalWorlds);
+            document.getElementById('totalVisits').textContent = formatNumber(totalVisits);
+            document.getElementById('avgPopularity').textContent = avgPopularity + '%';
+            document.getElementById('todayUpdated').textContent = formatNumber(todayUpdated);
+        }
+
+        // 検索フィルター
+        function filterWorlds() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            if (!searchTerm) {
+                filteredWorlds = [...allWorlds];
+            } else {
+                filteredWorlds = allWorlds.filter(world => 
+                    (world.name && world.name.toLowerCase().includes(searchTerm)) ||
+                    (world.author_name && world.author_name.toLowerCase().includes(searchTerm)) ||
+                    (world.description && world.description.toLowerCase().includes(searchTerm)) ||
+                    (world.tags && world.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+                );
+            }
+            
+            sortWorlds();
+        }
+
+        // ソート
+        function sortWorlds() {
+            const sortBy = document.getElementById('sortSelect').value;
+            currentSort = sortBy;
+            
+            filteredWorlds.sort((a, b) => {
+                switch (sortBy) {
+                    case 'popularity':
+                        return (b.popularity || 0) - (a.popularity || 0);
+                    case 'visits':
+                        return (b.visits || 0) - (a.visits || 0);
+                    case 'created_at':
+                        return new Date(b.publication_date || 0) - new Date(a.publication_date || 0);
+                    case 'updated_at':
+                        return new Date(b.scraped_at || 0) - new Date(a.scraped_at || 0);
+                    case 'name':
+                        return (a.name || '').localeCompare(b.name || '');
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayWorlds();
+        }
+
+        // CSV出力
+        function exportWorlds() {
+            if (filteredWorlds.length === 0) {
+                alert('出力するワールドデータがありません。');
+                return;
+            }
+
+            const csv = [
+                ['ワールド名', '作者', '説明', '訪問数', '人気度', 'お気に入り', '定員', 'タグ', '作成日', '更新日'],
+                ...filteredWorlds.map(world => [
+                    world.name || '',
+                    world.author_name || '',
+                    world.description || '',
+                    world.visits || 0,
+                    world.popularity || 0,
+                    world.favorites || 0,
+                    world.capacity || 0,
+                    (world.tags || []).join(';'),
+                    world.publication_date || '',
+                    world.scraped_at || ''
+                ])
+            ].map(row => row.map(field => `"${(field || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `vrchat_worlds_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // エラー表示
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // ユーティリティ関数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            try {
+                return new Date(dateString).toLocaleDateString('ja-JP');
+            } catch {
+                return dateString;
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        // 初期データ読み込み
+        loadWorlds();
+    </script>
+</body>
+</html>

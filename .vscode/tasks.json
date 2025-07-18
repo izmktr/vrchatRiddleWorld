@@ -1,0 +1,51 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install Dependencies",
+			"type": "shell",
+			"command": "pip",
+			"args": [
+				"install",
+				"-r",
+				"requirements.txt"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": false
+		},
+		{
+			"label": "Run Scraper",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"scraper.py"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": false
+		},
+		{
+			"label": "Start Flask Server",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"app.py"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": true
+		},
+		{
+			"label": "Start Scheduler",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"scheduler.py"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": true
+		}
+	]
+}
