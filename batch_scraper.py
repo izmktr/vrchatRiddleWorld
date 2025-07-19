@@ -41,7 +41,8 @@ class VRChatBatchProcessor:
     def load_urls_from_file(self) -> List[str]:
         """ファイルからVRChatワールドURLを読み込み"""
         try:
-            with open(self.file_path, 'r', encoding='utf-8') as f:
+            # BOM付きUTF-8も対応
+            with open(self.file_path, 'r', encoding='utf-8-sig') as f:
                 urls = [
                     line.strip() 
                     for line in f 

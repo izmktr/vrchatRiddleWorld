@@ -184,6 +184,7 @@ exports/
 scraped_data/
 downloads/
 images/
+thumbnail/
 
 # キャッシュファイル
 cache/

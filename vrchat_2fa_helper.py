@@ -4,7 +4,6 @@ VRChat 2FA認証ヘルパースクリプト
 メールで受信した2FAコードを入力するためのユーティリティ
 """
 
-import os
 import sys
 from pathlib import Path
 

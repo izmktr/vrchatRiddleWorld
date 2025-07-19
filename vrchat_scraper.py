@@ -6,9 +6,10 @@ VRChatワールドデータスクレイピング
 import time
 import logging
 import json
+import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -26,6 +27,10 @@ class VRChatWorldScraper:
         self.firebase_manager = FirebaseManager()
         self.base_url = "https://api.vrchat.cloud/api/1/"
         self.session_file = "config/vrchat_session.json"
+        self.thumbnail_dir = "thumbnail"
+        
+        # サムネイルディレクトリを作成
+        os.makedirs(self.thumbnail_dir, exist_ok=True)
         
     def ensure_authenticated(self) -> bool:
         """認証状態を確保"""
@@ -43,13 +48,57 @@ class VRChatWorldScraper:
         
         return False
     
+    def download_thumbnail(self, thumbnail_url: str, world_id: str) -> Optional[str]:
+        """
+        サムネイル画像をダウンロードしてローカルに保存
+        """
+        if not thumbnail_url or thumbnail_url == '':
+            logger.warning(f"サムネイルURLが空です: {world_id}")
+            return None
+            
+        try:
+            # ファイル名を生成（ワールドID + 拡張子）
+            parsed_url = urlparse(thumbnail_url)
+            file_extension = '.jpg'  # VRChatサムネイルは通常jpg
+            if '.' in parsed_url.path:
+                file_extension = '.' + parsed_url.path.split('.')[-1]
+            
+            filename = f"{world_id}{file_extension}"
+            filepath = os.path.join(self.thumbnail_dir, filename)
+            
+            # 既にファイルが存在する場合はスキップ
+            if os.path.exists(filepath):
+                logger.info(f"サムネイル既存: {filename}")
+                return filepath
+            
+            # 画像をダウンロード
+            logger.info(f"サムネイルダウンロード中: {thumbnail_url}")
+            session = self.auth.get_authenticated_session()
+            if not session:
+                logger.error("認証されたセッションが取得できません")
+                return None
+                
+            response = session.get(thumbnail_url, timeout=30)
+            response.raise_for_status()
+            
+            # ファイルに保存
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+            
+            logger.info(f"✅ サムネイル保存完了: {filename} ({len(response.content)} bytes)")
+            return filepath
+            
+        except Exception as e:
+            logger.error(f"❌ サムネイルダウンロードエラー {world_id}: {e}")
+            return None
+    
     def search_worlds(self, 
                      search: str = "",
                      featured: bool = False,
                      sort: str = "popularity",
                      user: str = "me",
                      number: int = 60,
-                     offset: int = 0) -> List[Dict]:
+                     offset: int = 0) -> List[Dict[str, Any]]:
         """
         ワールドを検索
         
@@ -76,7 +125,7 @@ class VRChatWorldScraper:
             url = urljoin(self.base_url, "worlds")
             
             # パラメータ設定
-            params = {
+            params: Dict[str, Any] = {
                 'n': min(number, 100),  # 最大100に制限
                 'offset': offset,
                 'sort': sort,
@@ -103,7 +152,7 @@ class VRChatWorldScraper:
             logger.error(f"ワールド検索例外: {e}")
             return []
     
-    def get_world_details(self, world_id: str) -> Optional[Dict]:
+    def get_world_details(self, world_id: str) -> Optional[Dict[str, Any]]:
         """
         特定のワールドの詳細情報を取得
         """
@@ -132,7 +181,7 @@ class VRChatWorldScraper:
             logger.error(f"ワールド詳細取得例外: {e}")
             return None
     
-    def get_world_instances(self, world_id: str) -> List[Dict]:
+    def get_world_instances(self, world_id: str) -> List[Dict[str, Any]]:
         """
         ワールドのインスタンス情報を取得
         """
@@ -161,7 +210,7 @@ class VRChatWorldScraper:
             logger.error(f"インスタンス取得例外: {e}")
             return []
     
-    def process_world_data(self, world_data: Dict) -> Dict:
+    def process_world_data(self, world_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         ワールドデータを処理してFirebase用の形式に変換
         """
@@ -195,7 +244,7 @@ class VRChatWorldScraper:
         
         return processed_data
     
-    def scrape_popular_worlds(self, count: int = 100) -> List[Dict]:
+    def scrape_popular_worlds(self, count: int = 100) -> List[Dict[str, Any]]:
         """
         人気ワールドをスクレイピング
         """
@@ -259,7 +308,7 @@ class VRChatWorldScraper:
         logger.info(f"スクレイピング完了: {len(all_worlds)}件のワールドデータを収集")
         return all_worlds
     
-    def scrape_featured_worlds(self) -> List[Dict]:
+    def scrape_featured_worlds(self) -> List[Dict[str, Any]]:
         """
         フィーチャーされたワールドをスクレイピング
         """
@@ -291,7 +340,7 @@ class VRChatWorldScraper:
         logger.info(f"フィーチャーワールドスクレイピング完了: {len(processed_worlds)}件")
         return processed_worlds
     
-    def search_worlds_by_keyword(self, keyword: str, count: int = 50) -> List[Dict]:
+    def search_worlds_by_keyword(self, keyword: str, count: int = 50) -> List[Dict[str, Any]]:
         """
         キーワードでワールドを検索してスクレイピング
         """
@@ -326,7 +375,7 @@ class VRChatWorldScraper:
         if self.auth:
             self.auth.logout()
 
-    def scrape_world_page(self, world_id: str) -> Optional[Dict]:
+    def scrape_world_page(self, world_id: str) -> Optional[Dict[str, Any]]:
         """
         VRChatワールドページから詳細情報をスクレイピング
         """
@@ -366,7 +415,7 @@ class VRChatWorldScraper:
             logger.error(f"ワールドページスクレイピング例外: {e}")
             return None
     
-    def _extract_world_info(self, soup: BeautifulSoup, world_id: str) -> Optional[Dict]:
+    def _extract_world_info(self, soup: BeautifulSoup, world_id: str) -> Optional[Dict[str, Any]]:
         """
         HTMLからワールド情報を抽出
         """
@@ -512,7 +561,7 @@ class VRChatWorldScraper:
             for item in data:
                 self._extract_from_json_data(item, world_info)
 
-    def scrape_world_by_url(self, url: str) -> Optional[Dict]:
+    def scrape_world_by_url(self, url: str) -> Optional[Dict[str, Any]]:
         """
         VRChatワールドURLから情報をスクレイピング
         """
@@ -539,6 +588,20 @@ class VRChatWorldScraper:
                 'published': api_data.get('publicatedAt', api_data.get('createdAt', '')),
                 'scraped_at': datetime.now().isoformat()
             }
+            
+            # サムネイル画像をダウンロード
+            thumbnail_url = api_data.get('imageUrl', '')
+            logger.info(f"サムネイルURL確認: '{thumbnail_url}' (長さ: {len(str(thumbnail_url))})")
+            if thumbnail_url:
+                logger.info(f"サムネイルダウンロード開始: {world_id}")
+                thumbnail_path = self.download_thumbnail(str(thumbnail_url), world_id)
+                if thumbnail_path:
+                    world_info['thumbnail_path'] = thumbnail_path
+                    logger.info(f"サムネイルパス設定: {thumbnail_path}")
+                else:
+                    logger.warning(f"サムネイルダウンロード失敗: {world_id}")
+            else:
+                logger.warning(f"サムネイルURLが空またはNone - ワールドID: {world_id}")
             logger.info(f"API経由でワールド情報取得成功: {world_info['title']}")
             return world_info
         
@@ -569,7 +632,7 @@ class VRChatWorldScraper:
             logger.error(f"ファイル読み込みエラー: {e}")
             return []
     
-    def scrape_multiple_worlds(self, urls: List[str], delay: float = 2.0) -> List[Dict]:
+    def scrape_multiple_worlds(self, urls: List[str], delay: float = 2.0) -> List[Dict[str, Any]]:
         """
         複数のワールドURLをバッチ処理でスクレイピング
         """
@@ -590,7 +653,9 @@ class VRChatWorldScraper:
                 logger.info(f"進行状況: {i}/{total_urls} - {url}")
                 
                 # ワールド情報を取得（認証チェックをスキップしてパフォーマンス向上）
+                logger.info(f"_scrape_world_by_url_authenticated呼び出し開始: {url}")
                 world_info = self._scrape_world_by_url_authenticated(url)  # type: ignore
+                logger.info(f"_scrape_world_by_url_authenticated完了: {world_info is not None}")
                 
                 if world_info:
                     results.append(world_info)
@@ -624,6 +689,7 @@ class VRChatWorldScraper:
         """
         認証済みセッションでワールド情報を取得（認証チェックをスキップ）
         """
+        logger.info(f"_scrape_world_by_url_authenticated開始: {url}")
         # URLからワールドIDを抽出
         world_id_match = re.search(r'wrld_[a-f0-9-]+', url)
         if not world_id_match:
@@ -635,7 +701,9 @@ class VRChatWorldScraper:
         
         # APIからワールド情報を取得（認証チェックをスキップ）
         api_data = self._get_world_details_authenticated(world_id)
+        logger.info(f"API取得データ確認: {api_data is not None}")
         if api_data:
+            logger.info(f"APIデータキー: {list(api_data.keys()) if isinstance(api_data, dict) else 'dict以外'}")
             # APIから取得したデータを変換
             world_info: Dict[str, Any] = {
                 'world_id': world_id,
@@ -647,6 +715,20 @@ class VRChatWorldScraper:
                 'published': str(api_data.get('publicatedAt', api_data.get('createdAt', ''))),  # type: ignore
                 'scraped_at': datetime.now().isoformat()
             }
+            
+            # サムネイル画像をダウンロード
+            thumbnail_url = str(api_data.get('imageUrl', ''))  # type: ignore
+            logger.info(f"サムネイルURL確認: '{thumbnail_url}' (長さ: {len(thumbnail_url)})")
+            if thumbnail_url:
+                logger.info(f"サムネイルダウンロード開始: {world_id}")
+                thumbnail_path = self.download_thumbnail(thumbnail_url, world_id)
+                if thumbnail_path:
+                    world_info['thumbnail_path'] = thumbnail_path
+                    logger.info(f"サムネイルパス設定: {thumbnail_path}")
+                else:
+                    logger.warning(f"サムネイルダウンロード失敗: {world_id}")
+            else:
+                logger.warning(f"サムネイルURLが空またはNone - ワールドID: {world_id}")
             
             logger.info(f"API経由でワールド情報取得成功: {world_info['title']}")
             return world_info
