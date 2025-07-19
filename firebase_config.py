@@ -10,6 +10,10 @@ from typing import Dict, List, Optional
 from google.cloud import firestore
 import firebase_admin
 from firebase_admin import credentials, firestore as admin_firestore
+from dotenv import load_dotenv
+
+# 環境変数の読み込み
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -23,32 +27,44 @@ class FirebaseManager:
     def initialize_firebase(self):
         """Firebase Admin SDKの初期化"""
         try:
-            # 環境変数からサービスアカウントキーのパスを取得
+            # 環境変数からFirebase設定を取得
+            project_id = os.getenv('FIREBASE_PROJECT_ID')
             service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
+            database_name = os.getenv('FIREBASE_DATABASE_NAME', '(default)')
+            
+            logger.info(f"Firebase初期化開始 - Project ID: {project_id}, Database: {database_name}")
             
             if service_account_path and os.path.exists(service_account_path):
                 # サービスアカウントキーファイルを使用
                 cred = credentials.Certificate(service_account_path)
                 if not firebase_admin._apps:
-                    firebase_admin.initialize_app(cred)
+                    firebase_admin.initialize_app(cred, {
+                        'projectId': project_id
+                    })
+                # Firestoreクライアント取得
                 self.db = admin_firestore.client()
-                logger.info("Firebase Admin SDK初期化完了（サービスアカウント使用）")
+                logger.info(f"Firebase Admin SDK初期化完了（サービスアカウント使用、DB: {database_name}）")
             
-            elif os.getenv('FIREBASE_PROJECT_ID'):
-                # プロジェクトIDのみでの初期化（Google Cloud環境など）
+            elif project_id:
+                # プロジェクトIDのみでの初期化
                 if not firebase_admin._apps:
-                    firebase_admin.initialize_app()
+                    firebase_admin.initialize_app(options={
+                        'projectId': project_id
+                    })
                 self.db = admin_firestore.client()
-                logger.info("Firebase Admin SDK初期化完了（デフォルト認証使用）")
+                logger.info("Firebase Admin SDK初期化完了（プロジェクトID使用）")
             
             else:
-                logger.warning("Firebase設定が見つかりません。.envファイルを確認してください。")
-                # テスト用のダミークライアント
+                logger.warning("Firebase設定が見つかりません。FIREBASE_PROJECT_IDを.envファイルで設定してください。")
                 self.db = None
                 
         except Exception as e:
             logger.error(f"Firebase初期化エラー: {e}")
             self.db = None
+    
+    def is_initialized(self) -> bool:
+        """Firebase初期化状況を確認"""
+        return self.db is not None
     
     def save_scraped_data(self, data: Dict) -> bool:
         """スクレイピングデータをFirestoreに保存"""

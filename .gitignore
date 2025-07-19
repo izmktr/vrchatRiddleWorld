@@ -192,3 +192,6 @@ cache/
 # テスト関連
 test_output/
 test_results/
+
+# その他の一時ファイル
+vrcworld.txt
