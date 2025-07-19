@@ -12,7 +12,10 @@ from datetime import datetime
 from typing import List, Dict, Optional, Any
 
 # プロジェクトルートをパスに追加
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(current_dir)
+sys.path.append(parent_dir)
 
 from vrchat_scraper import VRChatWorldScraper
 from firebase_config import FirebaseManager
@@ -22,7 +25,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('batch_scraper.log', encoding='utf-8'),
+        logging.FileHandler(os.path.join(parent_dir, 'batch_scraper.log'), encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -31,7 +34,17 @@ logger = logging.getLogger(__name__)
 class VRChatBatchProcessor:
     """VRChatワールドバッチ処理クラス"""
     
-    def __init__(self, file_path: str = 'vrcworld.txt', delay: float = 2.0):
+    def __init__(self, file_path: Optional[str] = None, delay: float = 2.0):
+        """
+        Args:
+            file_path: ワールドURLリストファイルのパス
+            delay: リクエスト間隔（秒）
+        """
+        # デフォルトファイルパスを設定
+        if file_path is None:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(current_dir)
+            file_path = os.path.join(parent_dir, 'vrcworld.txt')
         self.file_path = file_path
         self.delay = delay
         self.scraper = VRChatWorldScraper()
@@ -217,8 +230,8 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='VRChatワールドバッチ処理ツール')
-    parser.add_argument('--file', '-f', type=str, default='vrcworld.txt', 
-                        help='ワールドURLリストファイル (デフォルト: vrcworld.txt)')
+    parser.add_argument('--file', '-f', type=str, default=None, 
+                        help='ワールドURLリストファイル (デフォルト: ../vrcworld.txt)')
     parser.add_argument('--delay', '-d', type=float, default=2.0, 
                         help='リクエスト間隔（秒）(デフォルト: 2.0)')
     parser.add_argument('--csv', '-c', action='store_true', 

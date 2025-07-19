@@ -19,7 +19,7 @@
 			"type": "shell",
 			"command": "python",
 			"args": [
-				"scraper.py"
+				"python/scraper.py"
 			],
 			"group": "build",
 			"problemMatcher": [],
@@ -30,7 +30,7 @@
 			"type": "shell",
 			"command": "python",
 			"args": [
-				"app.py"
+				"python/app.py"
 			],
 			"group": "build",
 			"problemMatcher": [],
@@ -41,11 +41,22 @@
 			"type": "shell",
 			"command": "python",
 			"args": [
-				"scheduler.py"
+				"python/scheduler.py"
 			],
 			"group": "build",
 			"problemMatcher": [],
 			"isBackground": true
+		},
+		{
+			"label": "Run Batch Scraper",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"python/batch_scraper.py"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": false
 		}
 	]
 }
