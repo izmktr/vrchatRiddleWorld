@@ -3,7 +3,7 @@
 Web表示のテスト用
 """
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 import os
 import logging
@@ -33,12 +33,30 @@ def index():
 
 @app.route('/vrchat_worlds.html')
 def vrchat_worlds():
-    """VRChatワールド表示ページ"""
+    """VRChatワールド表示ページ（互換性のため）"""
     try:
-        with open(os.path.join(project_root, 'web', 'vrchat_worlds.html'), 'r', encoding='utf-8') as f:
+        with open(os.path.join(project_root, 'web', 'index.html'), 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        return "<h1>vrchat_worlds.htmlが見つかりません</h1>", 404
+        return "<h1>index.htmlが見つかりません</h1>", 404
+
+@app.route('/dashboard.html')
+def dashboard():
+    """ダッシュボードページ（旧トップページ）"""
+    try:
+        with open(os.path.join(project_root, 'web', 'old_index.html'), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>old_index.htmlが見つかりません</h1>", 404
+
+@app.route('/manage_worlds.html')
+def manage_worlds():
+    """ワールド管理ページ"""
+    try:
+        with open(os.path.join(project_root, 'web', 'manage_worlds.html'), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>manage_worlds.htmlが見つかりません</h1>", 404
 
 @app.route('/web/<path:filename>')
 def serve_web_files(filename):
@@ -70,13 +88,18 @@ def get_data():
 
 @app.route('/api/vrchat_worlds')
 def get_vrchat_worlds():
-    """VRChatワールドデータのAPI"""
+    """VRChatワールドデータのAPI（読み取り最適化版）"""
     try:
-        data = firebase_manager.get_vrchat_worlds(limit=1000)  # VRChatワールド専用メソッドを使用
+        # クエリパラメータから制限数を取得（デフォルト30に削減）
+        limit = request.args.get('limit', 30, type=int)
+        limit = min(limit, 100)  # 最大100件に制限
+        
+        data = firebase_manager.get_vrchat_worlds(limit=limit)
         return jsonify({
             'success': True,
             'worlds': data,
-            'count': len(data)
+            'count': len(data),
+            'reads_used': len(data)  # 実際の読み取り数を表示
         })
     except Exception as e:
         logger.error(f"VRChatワールドデータ取得エラー: {e}")
@@ -101,6 +124,91 @@ def get_stats():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/vrchat_world/<world_id>')
+def get_vrchat_world(world_id):
+    """VRChatワールド詳細取得"""
+    try:
+        world_data = firebase_manager.get_vrchat_world_by_id(world_id)
+        if world_data:
+            return jsonify({
+                'success': True,
+                'data': world_data
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'ワールドが見つかりません'
+            }), 404
+    except Exception as e:
+        logger.error(f"ワールド取得エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vrchat_world/<world_id>', methods=['PUT'])
+def update_vrchat_world(world_id):
+    """VRChatワールド更新"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': '更新データが必要です'
+            }), 400
+        
+        # idフィールドは更新対象から除外
+        update_data = {k: v for k, v in data.items() if k != 'id'}
+        
+        success = firebase_manager.update_vrchat_world(world_id, update_data)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'ワールドが更新されました'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '更新に失敗しました'
+            }), 500
+    except Exception as e:
+        logger.error(f"ワールド更新エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vrchat_world/<world_id>', methods=['DELETE'])
+def delete_vrchat_world(world_id):
+    """VRChatワールド削除"""
+    try:
+        success = firebase_manager.delete_vrchat_world(world_id)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'ワールドが削除されました'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '削除に失敗しました'
+            }), 500
+    except Exception as e:
+        logger.error(f"ワールド削除エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/edit_world.html')
+def edit_world():
+    """ワールド編集ページ"""
+    try:
+        with open(os.path.join(project_root, 'web', 'edit_world.html'), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>edit_world.htmlが見つかりません</h1>", 404
 
 @app.route('/api/health')
 def health_check():

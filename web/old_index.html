@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NazoWeb - VRChatワールド情報管理システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            text-align: center;
+            padding: 3rem 2rem;
+            margin-bottom: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            font-size: 1rem;
+            color: #777;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .navigation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .nav-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+            text-decoration: none;
+            color: #333;
+        }
+
+        .nav-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .nav-description {
+            color: #666;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background: #5a6fd8;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .search-box {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .data-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .data-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .item-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .item-url {
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            display: block;
+            word-break: break-all;
+        }
+
+        .item-url:hover {
+            text-decoration: underline;
+        }
+
+        .item-description {
+            color: #666;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        .headings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .heading-tag {
+            background: #f0f2ff;
+            color: #667eea;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .item-meta {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🌐 NazoWeb</div>
+            <div class="subtitle">VRChatワールド情報管理システム</div>
+            <div class="description">
+                VRChatの謎解きワールドやエスケープルームワールドの情報を収集・管理し、美しいインターフェースで閲覧できるWebアプリケーションです。
+            </div>
+        </header>
+
+        <!-- ナビゲーション -->
+        <div class="navigation-grid">
+            <a href="/" class="nav-card">
+                <span class="nav-icon">🏠</span>
+                <div class="nav-title">VRChatワールド一覧</div>
+                <div class="nav-description">
+                    収集したVRChatワールドの詳細情報を閲覧・検索・フィルタリングできます。サムネイル画像、作者情報、ワールドの説明、定員などの情報を確認でき、データの編集・削除も可能です。
+                </div>
+            </a>
+
+            <a href="/api/vrchat_worlds" class="nav-card">
+                <span class="nav-icon">📊</span>
+                <div class="nav-title">API エンドポイント</div>
+                <div class="nav-description">
+                    VRChatワールドデータのJSON APIです。開発者向けに生データへのアクセスを提供しています。外部アプリケーションとの連携に使用できます。
+                </div>
+            </a>
+
+            <a href="/api/stats" class="nav-card">
+                <span class="nav-icon">📈</span>
+                <div class="nav-title">統計情報</div>
+                <div class="nav-description">
+                    システムの統計情報や分析データを提供します。収集したワールド数、更新頻度、人気度分析などの情報を確認できます。
+                </div>
+            </a>
+
+            <a href="/api/health" class="nav-card">
+                <span class="nav-icon">🔧</span>
+                <div class="nav-title">システム状態</div>
+                <div class="nav-description">
+                    システムの稼働状態とFirebaseデータベースの接続状況を確認できます。管理者向けのヘルスチェック機能です。
+                </div>
+            </a>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalWorlds">-</div>
+                <div>総ワールド数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="recentUpdates">-</div>
+                <div>最近の更新</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="systemStatus">-</div>
+                <div>システム状態</div>
+            </div>
+    </div>
+
+    <script>
+        // APIベースのデータ読み込み
+        async function loadStats() {
+            try {
+                // VRChatワールド統計を取得
+                const worldsResponse = await fetch('/api/vrchat_worlds');
+                const worldsData = await worldsResponse.json();
+                
+                if (worldsData.success) {
+                    document.getElementById('totalWorlds').textContent = worldsData.count || 0;
+                } else {
+                    document.getElementById('totalWorlds').textContent = '0';
+                }
+
+                // 最近の更新数を計算（今日または昨日のデータ）
+                const today = new Date();
+                const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                
+                let recentCount = 0;
+                if (worldsData.success && worldsData.worlds) {
+                    recentCount = worldsData.worlds.filter(world => {
+                        const scrapedDate = new Date(world.scraped_at || world.updated_at);
+                        return scrapedDate >= yesterday;
+                    }).length;
+                }
+                document.getElementById('recentUpdates').textContent = recentCount;
+
+                // システム状態を取得
+                const healthResponse = await fetch('/api/health');
+                const healthData = await healthResponse.json();
+                
+                if (healthData.status === 'healthy') {
+                    document.getElementById('systemStatus').textContent = '正常';
+                    document.getElementById('systemStatus').style.color = '#4CAF50';
+                } else {
+                    document.getElementById('systemStatus').textContent = 'エラー';
+                    document.getElementById('systemStatus').style.color = '#f44336';
+                }
+
+            } catch (error) {
+                console.error('統計データ読み込みエラー:', error);
+                document.getElementById('totalWorlds').textContent = 'エラー';
+                document.getElementById('recentUpdates').textContent = 'エラー';
+                document.getElementById('systemStatus').textContent = 'エラー';
+                document.getElementById('systemStatus').style.color = '#f44336';
+            }
+        }
+
+        // ページ読み込み時に統計を取得
+        document.addEventListener('DOMContentLoaded', loadStats);
+        
+        // 10秒ごとに統計を更新
+        setInterval(loadStats, 10000);
+    </script>
+</body>
+</html>

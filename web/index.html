@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スクレイピングデータ表示</title>
+    <title>NazoWeb - VRChatワールド管理システム</title>
     <style>
         * {
             margin: 0;
@@ -15,169 +15,308 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            background-color: #f4f4f4;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
             text-align: center;
             padding: 2rem 0;
             margin-bottom: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
         }
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
             text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
         }
 
         .stat-number {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1.1rem;
         }
 
         .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .control-row {
             display: flex;
             gap: 1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
         }
 
         button {
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
             font-size: 1rem;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         button:hover {
-            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
 
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .search-box {
+        .search-box, .sort-select {
             flex: 1;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
             font-size: 1rem;
+            transition: border-color 0.3s;
         }
 
-        .data-grid {
+        .search-box:focus, .sort-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .world-grid {
             display: grid;
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            transition: opacity 0.3s ease;
         }
 
-        .data-item {
-            background: white;
-            border-radius: 8px;
+        .world-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .world-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+        }
+
+        .world-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            display: block;
+            transition: opacity 0.3s ease;
+        }
+
+        .world-content {
             padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .data-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-
-        .item-title {
-            font-size: 1.2rem;
+        .world-title {
+            font-size: 1.3rem;
             font-weight: bold;
             margin-bottom: 0.5rem;
             color: #333;
+            line-height: 1.3;
         }
 
-        .item-url {
+        .world-author {
             color: #667eea;
-            text-decoration: none;
-            margin-bottom: 0.5rem;
-            display: block;
-            word-break: break-all;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
         }
 
-        .item-url:hover {
-            text-decoration: underline;
-        }
-
-        .item-description {
+        .world-description {
             color: #666;
             margin-bottom: 1rem;
             line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
-        .item-meta {
+        .world-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stat-icon {
+            margin-right: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .world-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .world-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #888;
             border-top: 1px solid #eee;
             padding-top: 1rem;
         }
 
-        .headings {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .heading-tag {
-            background: #f0f2ff;
-            color: #667eea;
-            padding: 0.25rem 0.5rem;
-            border-radius: 3px;
-            font-size: 0.8rem;
-        }
-
         .loading {
             text-align: center;
-            padding: 2rem;
-            color: #666;
+            padding: 3rem;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .error {
             background: #ffebee;
             color: #c62828;
             padding: 1rem;
-            border-radius: 5px;
+            border-radius: 15px;
             margin-bottom: 1rem;
         }
 
         .empty-state {
             text-align: center;
-            padding: 3rem;
-            color: #666;
+            padding: 4rem;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .nav-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            text-decoration: none;
+            color: #333;
         }
 
         @media (max-width: 768px) {
@@ -185,45 +324,164 @@
                 padding: 10px;
             }
             
-            .controls {
+            .control-row {
                 flex-direction: column;
+                align-items: stretch;
             }
             
-            .item-meta {
-                flex-direction: column;
-                align-items: flex-start;
+            .world-grid {
+                grid-template-columns: 1fr;
             }
+            
+            .world-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* アクションボタンのスタイル */
+        .world-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .dialog-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ページング */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .pagination-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn.active {
+            background: rgba(52, 152, 219, 0.8);
+            border-color: rgba(52, 152, 219, 0.5);
+        }
+
+        .pagination-btn.active:hover {
+            background: rgba(52, 152, 219, 1);
+        }
+
+        .pagination-btn:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pagination-info {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin: 0 15px;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .page-size-selector select {
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .page-size-selector select option {
+            background: #333;
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🕷️ ウェブスクレイピングデータ</h1>
-            <p>収集したウェブサイトデータの表示</p>
+            <div class="logo">🌐 NazoWeb</div>
+            <div class="subtitle">VRChatワールド管理システム</div>
+            <div style="margin-top: 1rem;">
+                <a href="/dashboard.html" style="
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background: rgba(255, 255, 255, 0.2);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    transition: all 0.3s ease;
+                    font-size: 0.9rem;
+                " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+                    📊 ダッシュボード
+                </a>
+            </div>
         </header>
 
         <!-- 統計情報 -->
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-number" id="totalCount">-</div>
-                <div>総データ数</div>
+                <div class="stat-number" id="totalWorlds">-</div>
+                <div class="stat-label">総ワールド数</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="domainCount">-</div>
-                <div>ドメイン数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="todayCount">-</div>
-                <div>今日の収集</div>
+                <div class="stat-number" id="todayUpdated">-</div>
+                <div class="stat-label">今日更新</div>
             </div>
         </div>
 
         <!-- コントロール -->
         <div class="controls">
-            <button onclick="loadData()">🔄 データ更新</button>
-            <button onclick="exportData()">📥 CSV出力</button>
-            <input type="text" class="search-box" id="searchBox" placeholder="タイトルやURLで検索..." onkeyup="filterData()">
+            <div class="control-row">
+                <button onclick="loadWorlds()">🔄 データ更新</button>
+                <button onclick="loadRecentWorlds()">🆕 最新ワールド</button>
+                <button onclick="exportWorlds()">📥 CSV出力</button>
+                <button onclick="goToManagement()">⚙️ ワールド管理</button>
+            </div>
+            <div class="control-row">
+                <input type="text" class="search-box" id="searchBox" placeholder="ワールド名、作者名、タグで検索..." oninput="debouncedFilterWorlds()">
+                <select class="sort-select" id="sortSelect" onchange="sortWorlds()">
+                    <option value="created_at">作成日順</option>
+                    <option value="updated_at">更新日順</option>
+                    <option value="name">名前順</option>
+                </select>
+            </div>
         </div>
 
         <!-- エラー表示 -->
@@ -231,51 +489,104 @@
 
         <!-- ローディング -->
         <div id="loading" class="loading">
-            <p>データを読み込み中...</p>
+            <div class="spinner"></div>
+            <p>VRChatワールドデータを読み込み中...</p>
         </div>
 
-        <!-- データ表示エリア -->
-        <div id="dataGrid" class="data-grid"></div>
+        <!-- ワールド表示エリア -->
+        <div id="worldGrid" class="world-grid"></div>
+
+        <!-- ページング -->
+        <div id="pagination" class="pagination" style="display: none;">
+            <button id="firstPageBtn" class="pagination-btn" onclick="goToFirstPage()">最初</button>
+            <button id="prevPageBtn" class="pagination-btn" onclick="goToPrevPage()">前へ</button>
+            
+            <div id="pageNumbers" class="page-numbers"></div>
+            
+            <button id="nextPageBtn" class="pagination-btn" onclick="goToNextPage()">次へ</button>
+            <button id="lastPageBtn" class="pagination-btn" onclick="goToLastPage()">最後</button>
+            
+            <div class="pagination-info">
+                <span id="pageInfo"></span>
+            </div>
+            
+            <div class="page-size-selector">
+                <label style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">件数:</label>
+                <select id="pageSizeSelect" onchange="changePageSize()">
+                    <option value="20">20件</option>
+                    <option value="30" selected>30件</option>
+                    <option value="50">50件</option>
+                    <option value="100">100件</option>
+                </select>
+            </div>
+        </div>
 
         <!-- 空の状態 -->
         <div id="emptyState" class="empty-state" style="display: none;">
-            <h3>📭 データがありません</h3>
-            <p>スクレイピングを実行してデータを収集してください。</p>
+            <div class="empty-icon">🌍</div>
+            <h3>ワールドデータがありません</h3>
+            <p>VRChatワールドスクレイピングを実行してデータを収集してください。</p>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        // Firebase設定（環境に応じて変更してください）
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, getDocs, orderBy, query, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    <script>
+        let allWorlds = [];
+        let filteredWorlds = [];
+        let currentSort = 'created_at';
+        
+        // ページング関連の変数
+        let currentPage = 1;
+        let pageSize = 30;
+        let totalPages = 1;
 
-        // Firebase設定 - 実際の設定値に変更してください
-        const firebaseConfig = {
-            apiKey: "your-api-key",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
-        };
+        // ダミーデータ（Firebase接続前のテスト用）
+        const dummyWorlds = [
+            {
+                id: 'wrld_test1',
+                name: 'Beautiful Sunset World',
+                authorName: 'WorldCreator123',
+                description: '美しい夕焼けが楽しめるリラックスできるワールドです。友達と一緒に素晴らしい景色を楽しみましょう。',
+                capacity: 16,
+                tags: ['sunset', 'relaxing', 'scenic', 'social'],
+                imageUrl: '',
+                publicationDate: '2024-01-15T10:00:00Z',
+                scraped_at: new Date().toISOString()
+            },
+            {
+                id: 'wrld_test2',
+                name: 'Cyberpunk City',
+                authorName: 'FutureBuilder',
+                description: 'ネオンライトが輝くサイバーパンクな未来都市を探索できるワールド。',
+                capacity: 20,
+                tags: ['cyberpunk', 'city', 'exploration', 'neon'],
+                imageUrl: '',
+                publicationDate: '2024-02-01T14:30:00Z',
+                scraped_at: new Date(Date.now() - 86400000).toISOString()
+            },
+            {
+                id: 'wrld_test3',
+                name: 'Cozy Coffee Shop',
+                authorName: 'CafeOwner',
+                description: '温かい雰囲気のコーヒーショップ。友達とのんびりおしゃべりを楽しめます。',
+                capacity: 12,
+                tags: ['cozy', 'coffee', 'social', 'indoor'],
+                imageUrl: '',
+                publicationDate: '2024-01-28T09:15:00Z',
+                scraped_at: new Date(Date.now() - 172800000).toISOString()
+            }
+        ];
 
-        // Firebase初期化
-        let app, db;
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            console.log('Firebase初期化完了');
-        } catch (error) {
-            console.error('Firebase初期化エラー:', error);
-            showError('Firebase設定を確認してください: ' + error.message);
+        // デバウンス用の変数
+        let filterTimeout = null;
+
+        // デバウンス付きのフィルタ関数
+        function debouncedFilterWorlds() {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(filterWorlds, 300); // 300ms後に実行
         }
 
-        let allData = [];
-        let filteredData = [];
-
         // データ読み込み
-        async function loadData() {
+        async function loadWorlds() {
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('errorMessage');
             
@@ -283,163 +594,235 @@
             errorMessage.style.display = 'none';
 
             try {
-                if (!db) {
-                    throw new Error('Firebaseが初期化されていません');
+                // Firebase APIからデータを取得
+                const response = await fetch('/api/vrchat_worlds');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-
-                const q = query(
-                    collection(db, 'scraped_data'),
-                    orderBy('created_at', 'desc'),
-                    limit(100)
-                );
                 
-                const querySnapshot = await getDocs(q);
-                allData = [];
+                const data = await response.json();
+                console.log('APIレスポンス:', data);
                 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    data.id = doc.id;
-                    allData.push(data);
-                });
-
-                filteredData = [...allData];
-                displayData();
+                if (!data.success) {
+                    throw new Error(data.error || 'データ取得に失敗しました');
+                }
+                
+                allWorlds = Array.isArray(data.worlds) ? data.worlds : [];
+                console.log(`${allWorlds.length}件のワールドデータを取得しました`);
+                
+                // デバッグ用：最初のワールドデータの構造を確認
+                if (allWorlds.length > 0) {
+                    console.log('最初のワールドデータ:', allWorlds[0]);
+                    console.log('ワールドIDフィールド:', allWorlds[0].id);
+                }
+                
+                if (allWorlds.length === 0) {
+                    console.log('Firebaseにワールドデータが登録されていません');
+                }
+                
+                filteredWorlds = [...allWorlds];
+                displayWorlds();
                 updateStats();
                 
             } catch (error) {
                 console.error('データ読み込みエラー:', error);
-                showError('データの読み込みに失敗しました: ' + error.message);
+                showError('ワールドデータの読み込みに失敗しました: ' + error.message);
                 
-                // ダミーデータで表示（開発用）
-                loadDummyData();
+                // エラー時は空の配列を設定
+                allWorlds = [];
+                filteredWorlds = [];
+                displayWorlds();
+                updateStats();
             } finally {
                 loading.style.display = 'none';
             }
         }
 
-        // ダミーデータ（Firebase接続前のテスト用）
-        function loadDummyData() {
-            allData = [
-                {
-                    id: '1',
-                    title: 'サンプルサイト1',
-                    url: 'https://example.com/page1',
-                    description: 'これはサンプルサイトの説明です。',
-                    headings: ['見出し1', '見出し2', '見出し3'],
-                    scraped_at: new Date().toISOString(),
-                    content_length: 1500
-                },
-                {
-                    id: '2',
-                    title: 'サンプルサイト2',
-                    url: 'https://example.com/page2',
-                    description: '別のサンプルサイトの説明です。',
-                    headings: ['メイン見出し', 'サブ見出し'],
-                    scraped_at: new Date(Date.now() - 86400000).toISOString(),
-                    content_length: 2000
-                }
-            ];
-            filteredData = [...allData];
-            displayData();
-            updateStats();
+        // 最新ワールドを読み込み
+        function loadRecentWorlds() {
+            currentSort = 'created_at';
+            document.getElementById('sortSelect').value = 'created_at';
+            sortWorlds();
         }
 
-        // データ表示
-        function displayData() {
-            const dataGrid = document.getElementById('dataGrid');
+        // ワールド表示
+        function displayWorlds() {
+            const worldGrid = document.getElementById('worldGrid');
             const emptyState = document.getElementById('emptyState');
+            const pagination = document.getElementById('pagination');
 
-            if (filteredData.length === 0) {
-                dataGrid.innerHTML = '';
+            if (filteredWorlds.length === 0) {
+                worldGrid.innerHTML = '';
                 emptyState.style.display = 'block';
+                pagination.style.display = 'none';
                 return;
             }
 
             emptyState.style.display = 'none';
             
-            dataGrid.innerHTML = filteredData.map(item => `
-                <div class="data-item">
-                    <div class="item-title">${escapeHtml(item.title || 'タイトルなし')}</div>
-                    <a href="${item.url}" target="_blank" rel="noopener" class="item-url">${escapeHtml(item.url)}</a>
-                    <div class="item-description">${escapeHtml(item.description || '説明なし')}</div>
+            // ページング計算
+            totalPages = Math.ceil(filteredWorlds.length / pageSize);
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+            
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const currentPageWorlds = filteredWorlds.slice(startIndex, endIndex);
+            
+            // レイアウトシフトを防ぐためにトランジション中は透明度を下げる
+            worldGrid.style.opacity = '0.3';
+            
+            worldGrid.innerHTML = currentPageWorlds.map(world => {
+                // 画像URLを安全に決定
+                let imageUrl = 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World';
+                
+                if (world.thumbnail_path) {
+                    // ローカルサムネイルパスがある場合
+                    const filename = world.thumbnail_path.includes('\\') ? 
+                        world.thumbnail_path.split('\\').pop() : world.thumbnail_path.split('/').pop();
+                    imageUrl = `/thumbnail/${filename}`;
+                } else if (world.thumbnail_url) {
+                    // ローカルサムネイルURLがある場合
+                    const filename = world.thumbnail_url.includes('/') ? 
+                        world.thumbnail_url.split('/').pop() : world.thumbnail_url;
+                    imageUrl = `/thumbnail/${filename}`;
+                } else if (world.image_url) {
+                    imageUrl = world.image_url;
+                }
+                
+                return `
+                <div class="world-card">
+                    <img src="${imageUrl}" 
+                         alt="${escapeHtml(world.title || world.name || '名前なし')}" 
+                         class="world-image"
+                         loading="lazy"
+                         style="opacity: 0;"
+                         onload="this.style.opacity='1';"
+                         onerror="this.src='https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World'; this.style.opacity='1';">
                     
-                    ${item.headings && item.headings.length > 0 ? `
-                        <div class="headings">
-                            ${item.headings.slice(0, 5).map(h => `<span class="heading-tag">${escapeHtml(h)}</span>`).join('')}
+                    <div class="world-content">
+                        <div class="world-title">${escapeHtml(world.title || world.name || '名前なし')}</div>
+                        <div class="world-author">👤 ${escapeHtml(world.authorName || '作者不明')}</div>
+                        <div class="world-description">${escapeHtml(world.description || '説明なし')}</div>
+                        
+                        <div class="world-stats">
+                            <div class="stat-item">
+                                <span class="stat-icon">🏠</span>
+                                <span>定員 ${formatNumber(world.capacity || 0)}人</span>
+                            </div>
                         </div>
-                    ` : ''}
-                    
-                    <div class="item-meta">
-                        <span>収集日時: ${formatDate(item.scraped_at)}</span>
-                        <span>サイズ: ${formatFileSize(item.content_length)}</span>
+                        
+                        ${world.tags && world.tags.length > 0 ? `
+                            <div class="world-tags">
+                                ${world.tags.slice(0, 4).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="world-meta">
+                            <span>作成: ${formatDate(world.created_at || world.publicationDate)}</span>
+                            <span>更新: ${formatDate(world.updated_at)}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                </div>`
+            }).join('');
+            
+            // DOM更新完了後にスムーズに表示
+            requestAnimationFrame(() => {
+                worldGrid.style.opacity = '1';
+            });
+            
+            // ページング表示を更新
+            updatePagination();
         }
 
         // 統計更新
         function updateStats() {
-            document.getElementById('totalCount').textContent = allData.length;
+            const totalWorlds = allWorlds.length;
             
-            const domains = new Set(allData.map(item => {
-                try {
-                    return new URL(item.url).hostname;
-                } catch {
-                    return 'unknown';
-                }
-            }));
-            document.getElementById('domainCount').textContent = domains.size;
-
             const today = new Date().toDateString();
-            const todayCount = allData.filter(item => {
+            const todayUpdated = allWorlds.filter(world => {
                 try {
-                    return new Date(item.scraped_at).toDateString() === today;
+                    return new Date(world.scraped_at).toDateString() === today;
                 } catch {
                     return false;
                 }
             }).length;
-            document.getElementById('todayCount').textContent = todayCount;
+
+            document.getElementById('totalWorlds').textContent = formatNumber(totalWorlds);
+            document.getElementById('todayUpdated').textContent = formatNumber(todayUpdated);
         }
 
         // 検索フィルター
-        function filterData() {
+        function filterWorlds() {
             const searchTerm = document.getElementById('searchBox').value.toLowerCase();
             
             if (!searchTerm) {
-                filteredData = [...allData];
+                filteredWorlds = [...allWorlds];
             } else {
-                filteredData = allData.filter(item => 
-                    (item.title && item.title.toLowerCase().includes(searchTerm)) ||
-                    (item.url && item.url.toLowerCase().includes(searchTerm)) ||
-                    (item.description && item.description.toLowerCase().includes(searchTerm))
+                filteredWorlds = allWorlds.filter(world => 
+                    (world.title && world.title.toLowerCase().includes(searchTerm)) ||
+                    (world.name && world.name.toLowerCase().includes(searchTerm)) ||
+                    (world.authorName && world.authorName.toLowerCase().includes(searchTerm)) ||
+                    (world.description && world.description.toLowerCase().includes(searchTerm)) ||
+                    (world.tags && world.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
                 );
             }
             
-            displayData();
+            // 検索時は最初のページに戻る
+            currentPage = 1;
+            sortWorlds();
+        }
+
+        // ソート
+        function sortWorlds() {
+            const sortBy = document.getElementById('sortSelect').value;
+            currentSort = sortBy;
+            
+            filteredWorlds.sort((a, b) => {
+                switch (sortBy) {
+                    case 'created_at':
+                        return new Date(b.publicationDate || 0) - new Date(a.publicationDate || 0);
+                    case 'updated_at':
+                        return new Date(b.scraped_at || 0) - new Date(a.scraped_at || 0);
+                    case 'name':
+                        return (a.title || a.name || '').localeCompare(b.title || b.name || '');
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayWorlds();
         }
 
         // CSV出力
-        function exportData() {
-            if (filteredData.length === 0) {
-                alert('出力するデータがありません。');
+        function exportWorlds() {
+            if (filteredWorlds.length === 0) {
+                alert('出力するワールドデータがありません。');
                 return;
             }
 
             const csv = [
-                ['タイトル', 'URL', '説明', '収集日時', 'コンテンツサイズ'],
-                ...filteredData.map(item => [
-                    item.title || '',
-                    item.url || '',
-                    item.description || '',
-                    item.scraped_at || '',
-                    item.content_length || ''
+                ['ワールド名', '作者', '説明', '定員', 'タグ', '作成日', '更新日'],
+                ...filteredWorlds.map(world => [
+                    world.title || world.name || '',
+                    world.authorName || '',
+                    world.description || '',
+                    world.capacity || 0,
+                    (world.tags || []).join(';'),
+                    formatDate(world.created_at || world.publicationDate),
+                    formatDate(world.updated_at)
                 ])
-            ].map(row => row.map(field => `"${(field || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+            ].map(row => row.map(field => {
+                const value = field == null ? '' : String(field);
+                return `"${value.replace(/"/g, '""')}"`;
+            }).join(',')).join('\n');
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `scraped_data_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `vrchat_worlds_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
         }
 
@@ -452,34 +835,222 @@
 
         // ユーティリティ関数
         function escapeHtml(text) {
+            if (text == null || text === undefined) {
+                return '';
+            }
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = String(text);
             return div.innerHTML;
         }
 
         function formatDate(dateString) {
+            if (!dateString) {
+                return '不明';
+            }
+            
             try {
-                return new Date(dateString).toLocaleString('ja-JP');
-            } catch {
-                return dateString;
+                let date;
+                
+                // Firebaseタイムスタンプオブジェクトの場合
+                if (typeof dateString === 'object' && dateString._seconds) {
+                    date = new Date(dateString._seconds * 1000);
+                } 
+                // ISO文字列または数値の場合
+                else {
+                    date = new Date(dateString);
+                }
+                
+                // 無効な日付をチェック
+                if (isNaN(date.getTime())) {
+                    return '無効な日付';
+                }
+                
+                return date.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                console.error('Date formatting error:', error, dateString);
+                return '日付エラー';
             }
         }
 
-        function formatFileSize(bytes) {
-            if (!bytes) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        function formatNumber(num) {
+            // null、undefined、NaNをチェック
+            if (num == null || isNaN(num)) {
+                return '0';
+            }
+            
+            const numValue = Number(num);
+            if (numValue >= 1000000) {
+                return (numValue / 1000000).toFixed(1) + 'M';
+            } else if (numValue >= 1000) {
+                return (numValue / 1000).toFixed(1) + 'K';
+            }
+            return numValue.toString();
         }
 
-        // グローバル関数として公開
-        window.loadData = loadData;
-        window.exportData = exportData;
-        window.filterData = filterData;
-
         // 初期データ読み込み
-        loadData();
+        loadWorlds();
+
+        // ワールド管理画面へ遷移
+        function goToManagement() {
+            window.location.href = '/manage_worlds.html';
+        }
+
+        // トースト通知
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10001;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                ${type === 'success' ? 'background: rgba(46, 204, 113, 0.9);' : 'background: rgba(231, 76, 60, 0.9);'}
+            `;
+
+            document.body.appendChild(toast);
+
+            // スライドイン
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            // 自動削除
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // ページング機能
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            const pageInfo = document.getElementById('pageInfo');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const firstPageBtn = document.getElementById('firstPageBtn');
+            const prevPageBtn = document.getElementById('prevPageBtn');
+            const nextPageBtn = document.getElementById('nextPageBtn');
+            const lastPageBtn = document.getElementById('lastPageBtn');
+
+            if (filteredWorlds.length === 0) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'flex';
+
+            // ページ情報を更新
+            const startItem = (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, filteredWorlds.length);
+            pageInfo.textContent = `${startItem} - ${endItem} / ${filteredWorlds.length}件`;
+
+            // ボタンの有効/無効状態
+            firstPageBtn.disabled = currentPage === 1;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            lastPageBtn.disabled = currentPage === totalPages;
+
+            // ページ番号ボタン生成
+            pageNumbers.innerHTML = '';
+            
+            // ページ番号の表示範囲を計算
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            // 最初のページが必要な場合
+            if (startPage > 1) {
+                const btn = createPageButton(1);
+                pageNumbers.appendChild(btn);
+                
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.style.cssText = 'color: rgba(255, 255, 255, 0.6); padding: 8px;';
+                    pageNumbers.appendChild(ellipsis);
+                }
+            }
+            
+            // 中央のページ番号
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = createPageButton(i);
+                pageNumbers.appendChild(btn);
+            }
+            
+            // 最後のページが必要な場合
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.style.cssText = 'color: rgba(255, 255, 255, 0.6); padding: 8px;';
+                    pageNumbers.appendChild(ellipsis);
+                }
+                
+                const btn = createPageButton(totalPages);
+                pageNumbers.appendChild(btn);
+            }
+        }
+
+        function createPageButton(pageNum) {
+            const btn = document.createElement('button');
+            btn.textContent = pageNum;
+            btn.className = 'pagination-btn' + (pageNum === currentPage ? ' active' : '');
+            btn.onclick = () => goToPage(pageNum);
+            return btn;
+        }
+
+        function goToPage(page) {
+            if (page >= 1 && page <= totalPages && page !== currentPage) {
+                currentPage = page;
+                displayWorlds();
+                
+                // ページトップにスムーズスクロール
+                document.getElementById('worldGrid').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }
+
+        function goToFirstPage() {
+            goToPage(1);
+        }
+
+        function goToPrevPage() {
+            goToPage(currentPage - 1);
+        }
+
+        function goToNextPage() {
+            goToPage(currentPage + 1);
+        }
+
+        function goToLastPage() {
+            goToPage(totalPages);
+        }
+
+        function changePageSize() {
+            const newPageSize = parseInt(document.getElementById('pageSizeSelect').value);
+            if (newPageSize !== pageSize) {
+                pageSize = newPageSize;
+                currentPage = 1; // 最初のページにリセット
+                displayWorlds();
+            }
+        }
     </script>
 </body>
 </html>

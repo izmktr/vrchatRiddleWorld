@@ -289,6 +289,36 @@
             opacity: 0.7;
         }
 
+        .nav-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            text-decoration: none;
+            color: #333;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -307,9 +337,200 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* アクションボタンのスタイル */
+        .world-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .edit-btn {
+            background: rgba(52, 152, 219, 0.8);
+            color: white;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .edit-btn:hover {
+            background: rgba(52, 152, 219, 1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .delete-btn {
+            background: rgba(231, 76, 60, 0.8);
+            color: white;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .delete-btn:hover {
+            background: rgba(231, 76, 60, 1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+        }
+
+        /* 削除確認ダイアログ */
+        .confirmation-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .dialog-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .dialog-content h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .dialog-content p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dialog-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .dialog-btn.confirm {
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+        }
+
+        .dialog-btn.confirm:hover {
+            background: rgba(231, 76, 60, 1);
+        }
+
+        .dialog-btn.cancel {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dialog-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ページング */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .pagination-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn.active {
+            background: rgba(52, 152, 219, 0.8);
+            border-color: rgba(52, 152, 219, 0.5);
+        }
+
+        .pagination-btn.active:hover {
+            background: rgba(52, 152, 219, 1);
+        }
+
+        .pagination-btn:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pagination-info {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin: 0 15px;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .page-size-selector select {
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .page-size-selector select option {
+            background: #333;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <!-- ナビゲーションボタン -->
+    <a href="/" class="nav-button">
+        <span>🏠</span>
+        <span>ホーム</span>
+    </a>
+
     <div class="container">
         <header>
             <div class="logo">🌐 VRChat World Explorer</div>
@@ -368,6 +589,31 @@
         <!-- ワールド表示エリア -->
         <div id="worldGrid" class="world-grid"></div>
 
+        <!-- ページング -->
+        <div id="pagination" class="pagination" style="display: none;">
+            <button id="firstPageBtn" class="pagination-btn" onclick="goToFirstPage()">最初</button>
+            <button id="prevPageBtn" class="pagination-btn" onclick="goToPrevPage()">前へ</button>
+            
+            <div id="pageNumbers" class="page-numbers"></div>
+            
+            <button id="nextPageBtn" class="pagination-btn" onclick="goToNextPage()">次へ</button>
+            <button id="lastPageBtn" class="pagination-btn" onclick="goToLastPage()">最後</button>
+            
+            <div class="pagination-info">
+                <span id="pageInfo"></span>
+            </div>
+            
+            <div class="page-size-selector">
+                <label style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">件数:</label>
+                <select id="pageSizeSelect" onchange="changePageSize()">
+                    <option value="20">20件</option>
+                    <option value="30" selected>30件</option>
+                    <option value="50">50件</option>
+                    <option value="100">100件</option>
+                </select>
+            </div>
+        </div>
+
         <!-- 空の状態 -->
         <div id="emptyState" class="empty-state" style="display: none;">
             <div class="empty-icon">🌍</div>
@@ -380,6 +626,11 @@
         let allWorlds = [];
         let filteredWorlds = [];
         let currentSort = 'popularity';
+        
+        // ページング関連の変数
+        let currentPage = 1;
+        let pageSize = 30;
+        let totalPages = 1;
 
         // ダミーデータ（Firebase接続前のテスト用）
         const dummyWorlds = [
@@ -462,6 +713,12 @@
                 allWorlds = Array.isArray(data.worlds) ? data.worlds : [];
                 console.log(`${allWorlds.length}件のワールドデータを取得しました`);
                 
+                // デバッグ用：最初のワールドデータの構造を確認
+                if (allWorlds.length > 0) {
+                    console.log('最初のワールドデータ:', allWorlds[0]);
+                    console.log('ワールドIDフィールド:', allWorlds[0].id);
+                }
+                
                 if (allWorlds.length === 0) {
                     console.log('Firebaseにワールドデータが登録されていません');
                 }
@@ -502,19 +759,31 @@
         function displayWorlds() {
             const worldGrid = document.getElementById('worldGrid');
             const emptyState = document.getElementById('emptyState');
+            const pagination = document.getElementById('pagination');
 
             if (filteredWorlds.length === 0) {
                 worldGrid.innerHTML = '';
                 emptyState.style.display = 'block';
+                pagination.style.display = 'none';
                 return;
             }
 
             emptyState.style.display = 'none';
             
+            // ページング計算
+            totalPages = Math.ceil(filteredWorlds.length / pageSize);
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+            
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const currentPageWorlds = filteredWorlds.slice(startIndex, endIndex);
+            
             // レイアウトシフトを防ぐためにトランジション中は透明度を下げる
             worldGrid.style.opacity = '0.3';
             
-            worldGrid.innerHTML = filteredWorlds.map(world => {
+            worldGrid.innerHTML = currentPageWorlds.map(world => {
                 // 画像URLを安全に決定
                 let imageUrl = 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World';
                 
@@ -573,8 +842,17 @@
                         ` : ''}
                         
                         <div class="world-meta">
-                            <span>作成: ${formatDate(world.publication_date)}</span>
-                            <span>更新: ${formatDate(world.scraped_at)}</span>
+                            <span>作成: ${formatDate(world.created_at || world.publication_date)}</span>
+                            <span>更新: ${formatDate(world.updated_at)}</span>
+                        </div>
+                        
+                        <div class="world-actions" style="margin-top: 15px; text-align: center;">
+                            <button class="action-btn edit-btn" onclick="editWorld('${world.id}')" title="編集">
+                                ✏️ 編集
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteWorld('${world.id}', '${escapeHtml(world.title || world.name || '不明')}')" title="削除">
+                                🗑️ 削除
+                            </button>
                         </div>
                     </div>
                 </div>`
@@ -584,6 +862,9 @@
             requestAnimationFrame(() => {
                 worldGrid.style.opacity = '1';
             });
+            
+            // ページング表示を更新
+            updatePagination();
         }
 
         // 統計更新
@@ -624,6 +905,8 @@
                 );
             }
             
+            // 検索時は最初のページに戻る
+            currentPage = 1;
             sortWorlds();
         }
 
@@ -670,8 +953,8 @@
                     world.favorites || 0,
                     world.capacity || 0,
                     (world.tags || []).join(';'),
-                    world.publication_date || '',
-                    world.scraped_at || ''
+                    formatDate(world.created_at || world.publication_date),
+                    formatDate(world.updated_at)
                 ])
             ].map(row => row.map(field => {
                 const value = field == null ? '' : String(field);
@@ -703,10 +986,35 @@
         }
 
         function formatDate(dateString) {
+            if (!dateString) {
+                return '不明';
+            }
+            
             try {
-                return new Date(dateString).toLocaleDateString('ja-JP');
-            } catch {
-                return dateString;
+                let date;
+                
+                // Firebaseタイムスタンプオブジェクトの場合
+                if (typeof dateString === 'object' && dateString._seconds) {
+                    date = new Date(dateString._seconds * 1000);
+                } 
+                // ISO文字列または数値の場合
+                else {
+                    date = new Date(dateString);
+                }
+                
+                // 無効な日付をチェック
+                if (isNaN(date.getTime())) {
+                    return '無効な日付';
+                }
+                
+                return date.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                console.error('Date formatting error:', error, dateString);
+                return '日付エラー';
             }
         }
 
@@ -727,6 +1035,240 @@
 
         // 初期データ読み込み
         loadWorlds();
+
+        // 編集機能
+        function editWorld(worldId) {
+            window.location.href = `/edit_world.html?id=${worldId}`;
+        }
+
+        // 削除機能
+        function deleteWorld(worldId, worldName) {
+            console.log('削除対象のワールドID:', worldId, 'ワールド名:', worldName);
+            if (!worldId) {
+                showToast('ワールドIDが無効です', 'error');
+                return;
+            }
+            currentDeleteId = worldId;
+            document.getElementById('deleteWorldName').textContent = worldName;
+            document.getElementById('confirmDialog').style.display = 'flex';
+        }
+
+        let currentDeleteId = null;
+
+        // 削除実行
+        async function confirmDelete() {
+            if (!currentDeleteId) {
+                showToast('削除対象のワールドIDが設定されていません', 'error');
+                return;
+            }
+
+            console.log('削除実行中のワールドID:', currentDeleteId);
+
+            try {
+                const response = await fetch(`/api/vrchat_world/${currentDeleteId}`, {
+                    method: 'DELETE'
+                });
+
+                console.log('削除レスポンス:', response.status, response.statusText);
+                const result = await response.json();
+                console.log('削除結果:', result);
+
+                if (result.success) {
+                    // リストから削除
+                    allWorlds = allWorlds.filter(world => world.id !== currentDeleteId);
+                    filteredWorlds = filteredWorlds.filter(world => world.id !== currentDeleteId);
+                    
+                    // 現在のページに表示するアイテムがない場合、前のページに戻る
+                    const maxPage = Math.ceil(filteredWorlds.length / pageSize);
+                    if (currentPage > maxPage && maxPage > 0) {
+                        currentPage = maxPage;
+                    }
+                    
+                    displayWorlds();
+                    updateStats();
+                    
+                    showToast('ワールドが削除されました', 'success');
+                } else {
+                    showToast(`削除エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('削除エラー:', error);
+                showToast(`削除に失敗しました: ${error.message}`, 'error');
+            }
+
+            closeConfirmDialog();
+        }
+
+        // ダイアログを閉じる
+        function closeConfirmDialog() {
+            document.getElementById('confirmDialog').style.display = 'none';
+            currentDeleteId = null;
+        }
+
+        // トースト通知
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10001;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                ${type === 'success' ? 'background: rgba(46, 204, 113, 0.9);' : 'background: rgba(231, 76, 60, 0.9);'}
+            `;
+
+            document.body.appendChild(toast);
+
+            // スライドイン
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            // 自動削除
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // ページング機能
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            const pageInfo = document.getElementById('pageInfo');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const firstPageBtn = document.getElementById('firstPageBtn');
+            const prevPageBtn = document.getElementById('prevPageBtn');
+            const nextPageBtn = document.getElementById('nextPageBtn');
+            const lastPageBtn = document.getElementById('lastPageBtn');
+
+            if (filteredWorlds.length === 0) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'flex';
+
+            // ページ情報を更新
+            const startItem = (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, filteredWorlds.length);
+            pageInfo.textContent = `${startItem} - ${endItem} / ${filteredWorlds.length}件`;
+
+            // ボタンの有効/無効状態
+            firstPageBtn.disabled = currentPage === 1;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            lastPageBtn.disabled = currentPage === totalPages;
+
+            // ページ番号ボタン生成
+            pageNumbers.innerHTML = '';
+            
+            // ページ番号の表示範囲を計算
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            // 最初のページが必要な場合
+            if (startPage > 1) {
+                const btn = createPageButton(1);
+                pageNumbers.appendChild(btn);
+                
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.style.cssText = 'color: rgba(255, 255, 255, 0.6); padding: 8px;';
+                    pageNumbers.appendChild(ellipsis);
+                }
+            }
+            
+            // 中央のページ番号
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = createPageButton(i);
+                pageNumbers.appendChild(btn);
+            }
+            
+            // 最後のページが必要な場合
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.style.cssText = 'color: rgba(255, 255, 255, 0.6); padding: 8px;';
+                    pageNumbers.appendChild(ellipsis);
+                }
+                
+                const btn = createPageButton(totalPages);
+                pageNumbers.appendChild(btn);
+            }
+        }
+
+        function createPageButton(pageNum) {
+            const btn = document.createElement('button');
+            btn.textContent = pageNum;
+            btn.className = 'pagination-btn' + (pageNum === currentPage ? ' active' : '');
+            btn.onclick = () => goToPage(pageNum);
+            return btn;
+        }
+
+        function goToPage(page) {
+            if (page >= 1 && page <= totalPages && page !== currentPage) {
+                currentPage = page;
+                displayWorlds();
+                
+                // ページトップにスムーズスクロール
+                document.getElementById('worldGrid').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }
+
+        function goToFirstPage() {
+            goToPage(1);
+        }
+
+        function goToPrevPage() {
+            goToPage(currentPage - 1);
+        }
+
+        function goToNextPage() {
+            goToPage(currentPage + 1);
+        }
+
+        function goToLastPage() {
+            goToPage(totalPages);
+        }
+
+        function changePageSize() {
+            const newPageSize = parseInt(document.getElementById('pageSizeSelect').value);
+            if (newPageSize !== pageSize) {
+                pageSize = newPageSize;
+                currentPage = 1; // 最初のページにリセット
+                displayWorlds();
+            }
+        }
     </script>
+
+    <!-- 削除確認ダイアログ -->
+    <div id="confirmDialog" class="confirmation-dialog">
+        <div class="dialog-content">
+            <h3>削除の確認</h3>
+            <p>「<span id="deleteWorldName"></span>」を削除してもよろしいですか？<br>この操作は取り消せません。</p>
+            <div class="dialog-buttons">
+                <button class="dialog-btn confirm" onclick="confirmDelete()">削除</button>
+                <button class="dialog-btn cancel" onclick="closeConfirmDialog()">キャンセル</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

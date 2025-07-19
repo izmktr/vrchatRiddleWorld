@@ -103,16 +103,16 @@ class VRChatBatchProcessor:
                     self.results.append(world_data)
                     successful_count += 1
                     
-                    logger.info(f"✅ 成功: {world_data.get('title', 'Unknown')}")
-                    logger.info(f"👤 作者: {world_data.get('creator', 'Unknown')}")
+                    logger.info(f"✅ 成功: {world_data.get('name', 'Unknown')}")
+                    logger.info(f"👤 作者: {world_data.get('authorName', 'Unknown')}")
                     logger.info(f"🏠 定員: {world_data.get('capacity', 'Unknown')}人")
                     
                     # Firebaseに保存
                     try:
                         if self.firebase_manager.save_vrchat_world_data(world_data):  # type: ignore
-                            logger.info(f"💾 Firebase保存完了: {world_data.get('world_id', 'unknown')}")
+                            logger.info(f"💾 Firebase保存完了: {world_data.get('id', 'unknown')}")
                         else:
-                            logger.warning(f"⚠️  Firebase保存失敗: {world_data.get('world_id', 'unknown')}")
+                            logger.warning(f"⚠️  Firebase保存失敗: {world_data.get('id', 'unknown')}")
                     except Exception as e:
                         logger.error(f"❌ Firebase保存エラー: {e}")
                         
@@ -174,12 +174,35 @@ class VRChatBatchProcessor:
             logger.info(f"・合計定員: {total_capacity} 人")
             logger.info(f"・平均定員: {total_capacity // len(self.results)} 人" if self.results else "・平均定員: 0 人")
             
+            # サムネイル統計
+            thumbnail_count = 0
+            existing_thumbnail_count = 0
+            thumbnail_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'thumbnail')
+            
+            for world in self.results:
+                thumbnail_url = world.get('thumbnailImageUrl', world.get('imageUrl', ''))
+                world_id = world.get('id', '')
+                if thumbnail_url and world_id:
+                    thumbnail_count += 1
+                    # ファイルの存在確認
+                    filename = f"{world_id}.jpg"
+                    filepath = os.path.join(thumbnail_dir, filename)
+                    if os.path.exists(filepath):
+                        existing_thumbnail_count += 1
+            
+            logger.info(f"\n🖼️ サムネイル統計:")
+            logger.info(f"・サムネイルURL取得: {thumbnail_count} 件")
+            logger.info(f"・サムネイル保存済み: {existing_thumbnail_count} 件")
+            if thumbnail_count > 0:
+                download_rate = (existing_thumbnail_count / thumbnail_count) * 100
+                logger.info(f"・ダウンロード率: {download_rate:.1f}%")
+            
             # 取得したワールドのリスト
             logger.info(f"\n📋 取得したワールド一覧:")
             for i, world in enumerate(self.results[:10], 1):
                 world_data = world  # 型アサーション用
-                title = str(world_data.get('title', 'Unknown'))[:30]
-                creator = str(world_data.get('creator', 'Unknown'))[:15]
+                title = str(world_data.get('name', 'Unknown'))[:30]
+                creator = str(world_data.get('authorName', 'Unknown'))[:15]
                 capacity = world_data.get('capacity', 'Unknown')
                 logger.info(f"{i:2d}. {title:<30} | {creator:<15} | 定員:{capacity}人")
             
@@ -203,20 +226,20 @@ class VRChatBatchProcessor:
             import csv
             
             with open(filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
-                fieldnames = ['world_id', 'title', 'creator', 'description', 'capacity', 'published', 'thumbnail_url', 'scraped_at']
+                fieldnames = ['id', 'name', 'authorName', 'description', 'capacity', 'publicationDate', 'thumbnailImageUrl', 'scraped_at']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 
                 writer.writeheader()
                 for world in self.results:
                     world_data = world  # 型アサーション用
                     writer.writerow({
-                        'world_id': str(world_data.get('world_id', '')),
-                        'title': str(world_data.get('title', '')),
-                        'creator': str(world_data.get('creator', '')),
+                        'id': str(world_data.get('id', '')),
+                        'name': str(world_data.get('name', '')),
+                        'authorName': str(world_data.get('authorName', '')),
                         'description': str(world_data.get('description', '')),
                         'capacity': str(world_data.get('capacity', '')),
-                        'published': str(world_data.get('published', '')),
-                        'thumbnail_url': str(world_data.get('thumbnail_url', '')),
+                        'publicationDate': str(world_data.get('publicationDate', '')),
+                        'thumbnailImageUrl': str(world_data.get('thumbnailImageUrl', world_data.get('imageUrl', ''))),
                         'scraped_at': str(world_data.get('scraped_at', ''))
                     })
             

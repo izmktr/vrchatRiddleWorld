@@ -6,7 +6,7 @@ import os
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from google.cloud import firestore
 import firebase_admin
 from firebase_admin import credentials, firestore as admin_firestore
@@ -151,10 +151,10 @@ class FirebaseManager:
             # VRChatワールド用のコレクション
             collection_ref = self.db.collection('vrchat_worlds')
             
-            # ドキュメントIDをworld_idにする
-            doc_id = world_data.get('world_id', '')
+            # ドキュメントIDをidにする
+            doc_id = world_data.get('id', '')
             if not doc_id:
-                logger.error("world_idが見つかりません")
+                logger.error("idが見つかりません")
                 return False
             
             # タイムスタンプを追加
@@ -170,8 +170,8 @@ class FirebaseManager:
             logger.error(f"VRChatワールドデータ保存エラー: {e}")
             return False
     
-    def get_vrchat_worlds(self, limit: int = 100, sort_by: str = 'popularity') -> List[Dict]:
-        """VRChatワールドデータを取得"""
+    def get_vrchat_worlds(self, limit: int = 50, sort_by: str = 'popularity') -> List[Dict]:
+        """VRChatワールドデータを取得（読み取り最適化版）"""
         if not self.db:
             logger.warning("Firebaseが初期化されていません。")
             return []
@@ -180,7 +180,7 @@ class FirebaseManager:
             collection_ref = self.db.collection('vrchat_worlds')
             logger.info(f"VRChatワールドデータ取得開始: limit={limit}, sort_by={sort_by}")
             
-            # まず全データを取得してみる（ソートなし）
+            # 読み取り数を制限してデータを取得
             docs = collection_ref.limit(limit).stream()
             
             results = []
@@ -189,11 +189,7 @@ class FirebaseManager:
                 data['id'] = doc.id
                 results.append(data)
             
-            logger.info(f"{len(results)}件のVRChatワールドデータを取得しました")
-            
-            # デバッグ用：最初の1件のデータ構造を確認
-            if results:
-                logger.info(f"サンプルデータ構造: {list(results[0].keys())}")
+            logger.info(f"{len(results)}件のVRChatワールドデータを取得しました（読み取り数: {len(results)}）")
             
             return results
             
@@ -202,7 +198,7 @@ class FirebaseManager:
             return []
     
     def search_vrchat_worlds(self, keyword: str, limit: int = 50) -> List[Dict]:
-        """キーワードでVRChatワールドを検索"""
+        """キーワードでVRChatワールドを検索（読み取り最適化版）"""
         if not self.db:
             logger.warning("Firebaseが初期化されていません。")
             return []
@@ -211,12 +207,16 @@ class FirebaseManager:
             collection_ref = self.db.collection('vrchat_worlds')
             
             # Firestoreの制限により、クライアントサイドでフィルタリング
-            docs = collection_ref.limit(1000).stream()  # より多くのデータを取得
+            # ただし読み取り数を制限（検索の場合は最大200件まで）
+            max_docs_to_search = min(200, limit * 4)  # 検索効率を考慮して制限
+            docs = collection_ref.limit(max_docs_to_search).stream()
             
             results = []
             keyword_lower = keyword.lower()
+            docs_processed = 0
             
             for doc in docs:
+                docs_processed += 1
                 data = doc.to_dict()
                 data['id'] = doc.id
                 
@@ -233,7 +233,7 @@ class FirebaseManager:
                     if len(results) >= limit:
                         break
             
-            logger.info(f"検索結果: {len(results)}件のワールドが見つかりました")
+            logger.info(f"検索結果: {len(results)}件のワールドが見つかりました（読み取り数: {docs_processed}）")
             return results
             
         except Exception as e:
@@ -241,44 +241,92 @@ class FirebaseManager:
             return []
 
     def get_stats(self) -> Dict:
-        """データの統計情報を取得"""
+        """データの統計情報を取得（読み取り最適化版）"""
         if not self.db:
             return {"error": "Firebase not initialized"}
         
         try:
-            # 一般的なスクレイピングデータの統計
-            collection_ref = self.db.collection('scraped_data')
-            docs = collection_ref.stream()
-            
-            total_count = 0
-            domains = {}
-            
-            for doc in docs:
-                data = doc.to_dict()
-                total_count += 1
-                
-                # ドメイン別の統計
-                url = data.get('url', '')
-                if url:
-                    from urllib.parse import urlparse
-                    domain = urlparse(url).netloc
-                    domains[domain] = domains.get(domain, 0) + 1
-            
-            # VRChatワールドの統計
+            # 統計は最小限のデータのみ取得
+            # VRChatワールドの数のみ取得（全データを読み取らない）
             vrchat_collection = self.db.collection('vrchat_worlds')
-            vrchat_docs = vrchat_collection.stream()
             
-            vrchat_count = 0
-            for doc in vrchat_docs:
-                vrchat_count += 1
+            # 統計情報は簡略化（読み取り数削減のため）
+            # 実際のカウントではなく、限定されたサンプル数で概算
+            sample_size = 10  # サンプルサイズを大幅に削減
+            sample_docs = list(vrchat_collection.limit(sample_size).stream())
+            
+            # サンプルから統計を推定
+            sample_count = len(sample_docs)
             
             return {
-                "total_scraped_data": total_count,
-                "domains": domains,
-                "vrchat_worlds": vrchat_count,
+                "vrchat_worlds_sample": sample_count,
+                "note": f"統計は最新{sample_size}件のサンプルに基づく概算です",
+                "timestamp": datetime.now().isoformat(),
+                "reads_used": sample_size  # 実際の読み取り数を記録
+            }
+            
+        except Exception as e:
+            logger.error(f"統計取得エラー: {e}")
+            return {
+                "error": str(e),
                 "timestamp": datetime.now().isoformat()
             }
             
         except Exception as e:
             logger.error(f"統計取得エラー: {e}")
             return {"error": str(e)}
+    
+    def get_vrchat_world_by_id(self, world_id: str) -> Optional[Dict[str, Any]]:
+        """指定されたIDのVRChatワールドを取得"""
+        try:
+            if not self.db:
+                return None
+                
+            doc_ref = self.db.collection('vrchat_worlds').document(world_id)
+            doc = doc_ref.get()
+            
+            if doc.exists:
+                data = doc.to_dict()
+                if data:
+                    data['id'] = doc.id
+                    return data
+            return None
+                
+        except Exception as e:
+            logger.error(f"VRChatワールド取得エラー (ID: {world_id}): {e}")
+            return None
+    
+    def update_vrchat_world(self, world_id: str, update_data: Dict[str, Any]) -> bool:
+        """VRChatワールドデータを更新"""
+        try:
+            if not self.db:
+                return False
+                
+            # 更新日時を自動追加
+            update_data['updated_at'] = firestore.SERVER_TIMESTAMP
+            
+            doc_ref = self.db.collection('vrchat_worlds').document(world_id)
+            doc_ref.update(update_data)
+            
+            logger.info(f"VRChatワールド更新完了 (ID: {world_id})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"VRChatワールド更新エラー (ID: {world_id}): {e}")
+            return False
+    
+    def delete_vrchat_world(self, world_id: str) -> bool:
+        """VRChatワールドデータを削除"""
+        try:
+            if not self.db:
+                return False
+                
+            doc_ref = self.db.collection('vrchat_worlds').document(world_id)
+            doc_ref.delete()
+            
+            logger.info(f"VRChatワールド削除完了 (ID: {world_id})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"VRChatワールド削除エラー (ID: {world_id}): {e}")
+            return False

@@ -29,6 +29,11 @@ class VRChatWorldScraper:
         self.session_file = "config/vrchat_session.json"
         self.thumbnail_dir = "thumbnail"
         
+        # サムネイル統計カウンター
+        self.thumbnail_downloaded = 0
+        self.thumbnail_skipped = 0
+        self.thumbnail_failed = 0
+        
         # サムネイルディレクトリを作成
         os.makedirs(self.thumbnail_dir, exist_ok=True)
         
@@ -66,10 +71,16 @@ class VRChatWorldScraper:
             filename = f"{world_id}{file_extension}"
             filepath = os.path.join(self.thumbnail_dir, filename)
             
-            # 既にファイルが存在する場合はスキップ
+            # 既にファイルが存在する場合はスキップ（ただし0バイトファイルは再ダウンロード）
             if os.path.exists(filepath):
-                logger.info(f"サムネイル既存: {filename}")
-                return filepath
+                file_size = os.path.getsize(filepath)
+                if file_size > 0:
+                    logger.info(f"⏭️ サムネイル既存のためスキップ: {filename} ({file_size} bytes)")
+                    self.thumbnail_skipped += 1
+                    return filepath
+                else:
+                    logger.warning(f"⚠️ 破損ファイル検出（0 bytes）、再ダウンロードします: {filename}")
+                    os.remove(filepath)
             
             # 画像をダウンロード
             logger.info(f"サムネイルダウンロード中: {thumbnail_url}")
@@ -86,11 +97,30 @@ class VRChatWorldScraper:
                 f.write(response.content)
             
             logger.info(f"✅ サムネイル保存完了: {filename} ({len(response.content)} bytes)")
+            self.thumbnail_downloaded += 1
             return filepath
             
         except Exception as e:
             logger.error(f"❌ サムネイルダウンロードエラー {world_id}: {e}")
+            self.thumbnail_failed += 1
             return None
+    
+    def print_thumbnail_stats(self):
+        """サムネイル統計を出力"""
+        total = self.thumbnail_downloaded + self.thumbnail_skipped + self.thumbnail_failed
+        
+        if total > 0:
+            logger.info(f"\n🖼️ サムネイル統計:")
+            logger.info(f"・ダウンロード完了: {self.thumbnail_downloaded} 件")
+            logger.info(f"・スキップ済み: {self.thumbnail_skipped} 件")
+            logger.info(f"・失敗: {self.thumbnail_failed} 件")
+            logger.info(f"・成功率: {((self.thumbnail_downloaded + self.thumbnail_skipped) / total * 100):.1f}%")
+    
+    def reset_thumbnail_stats(self):
+        """サムネイル統計をリセット"""
+        self.thumbnail_downloaded = 0
+        self.thumbnail_skipped = 0
+        self.thumbnail_failed = 0
     
     def search_worlds(self, 
                      search: str = "",
@@ -215,29 +245,27 @@ class VRChatWorldScraper:
         ワールドデータを処理してFirebase用の形式に変換
         """
         processed_data = {
-            'world_id': world_data.get('id', ''),
+            'id': world_data.get('id', ''),
             'name': world_data.get('name', ''),
             'description': world_data.get('description', ''),
-            'author_name': world_data.get('authorName', ''),
-            'author_id': world_data.get('authorId', ''),
+            'authorName': world_data.get('authorName', ''),
+            'authorId': world_data.get('authorId', ''),
             'capacity': world_data.get('capacity', 0),
-            'recommended_capacity': world_data.get('recommendedCapacity', 0),
+            'recommendedCapacity': world_data.get('recommendedCapacity', 0),
             'visits': world_data.get('visits', 0),
             'popularity': world_data.get('popularity', 0),
             'heat': world_data.get('heat', 0),
             'favorites': world_data.get('favorites', 0),
-            'publication_date': world_data.get('publicationDate', ''),
-            'labs_publication_date': world_data.get('labsPublicationDate', ''),
+            'publicationDate': world_data.get('publicationDate', ''),
+            'labsPublicationDate': world_data.get('labsPublicationDate', ''),
             'created_at': world_data.get('created_at', ''),
             'updated_at': world_data.get('updated_at', ''),
             'version': world_data.get('version', 0),
-            'unity_version': world_data.get('unityVersion', ''),
-            'release_status': world_data.get('releaseStatus', ''),
-            'tags': world_data.get('tags', []),
-            'image_url': world_data.get('imageUrl', ''),
-            'thumbnail_image_url': world_data.get('thumbnailImageUrl', ''),
-            'namespace': world_data.get('namespace', ''),
+            'releaseStatus': world_data.get('releaseStatus', ''),
             'platform': world_data.get('platform', ''),
+            'imageUrl': world_data.get('imageUrl', ''),
+            'thumbnailImageUrl': world_data.get('thumbnailImageUrl', ''),
+            'tags': world_data.get('tags', []),
             'scraped_at': datetime.now().isoformat(),
             'instances': []  # 後で追加される
         }
@@ -306,6 +334,7 @@ class VRChatWorldScraper:
             time.sleep(1.0)
         
         logger.info(f"スクレイピング完了: {len(all_worlds)}件のワールドデータを収集")
+        self.print_thumbnail_stats()
         return all_worlds
     
     def scrape_featured_worlds(self) -> List[Dict[str, Any]]:
@@ -577,18 +606,6 @@ class VRChatWorldScraper:
         # まずVRChat APIでワールド情報を取得を試行
         api_data = self.get_world_details(world_id)
         if api_data:
-            # APIから取得したデータを変換
-            world_info = {
-                'world_id': world_id,
-                'title': api_data.get('name', ''),
-                'creator': api_data.get('authorName', ''),
-                'thumbnail_url': api_data.get('imageUrl', ''),
-                'description': api_data.get('description', ''),
-                'capacity': str(api_data.get('capacity', '')),
-                'published': api_data.get('publicatedAt', api_data.get('createdAt', '')),
-                'scraped_at': datetime.now().isoformat()
-            }
-            
             # サムネイル画像をダウンロード
             thumbnail_url = api_data.get('imageUrl', '')
             logger.info(f"サムネイルURL確認: '{thumbnail_url}' (長さ: {len(str(thumbnail_url))})")
@@ -596,14 +613,17 @@ class VRChatWorldScraper:
                 logger.info(f"サムネイルダウンロード開始: {world_id}")
                 thumbnail_path = self.download_thumbnail(str(thumbnail_url), world_id)
                 if thumbnail_path:
-                    world_info['thumbnail_path'] = thumbnail_path
+                    api_data['thumbnail_path'] = thumbnail_path
                     logger.info(f"サムネイルパス設定: {thumbnail_path}")
                 else:
                     logger.warning(f"サムネイルダウンロード失敗: {world_id}")
             else:
                 logger.warning(f"サムネイルURLが空またはNone - ワールドID: {world_id}")
-            logger.info(f"API経由でワールド情報取得成功: {world_info['title']}")
-            return world_info
+            
+            # VRChat APIデータを処理してFirebase用の形式に変換
+            processed_world = self.process_world_data(api_data)
+            logger.info(f"API経由でワールド情報取得成功: {processed_world.get('name', 'Unknown')}")
+            return processed_world
         
         # APIでの取得に失敗した場合は、Webページスクレイピングを試行
         return self.scrape_world_page(world_id)
@@ -701,21 +721,7 @@ class VRChatWorldScraper:
         
         # APIからワールド情報を取得（認証チェックをスキップ）
         api_data = self._get_world_details_authenticated(world_id)
-        logger.info(f"API取得データ確認: {api_data is not None}")
         if api_data:
-            logger.info(f"APIデータキー: {list(api_data.keys()) if isinstance(api_data, dict) else 'dict以外'}")
-            # APIから取得したデータを変換
-            world_info: Dict[str, Any] = {
-                'world_id': world_id,
-                'title': str(api_data.get('name', '')),  # type: ignore
-                'creator': str(api_data.get('authorName', '')),  # type: ignore
-                'thumbnail_url': str(api_data.get('imageUrl', '')),  # type: ignore
-                'description': str(api_data.get('description', '')),  # type: ignore
-                'capacity': str(api_data.get('capacity', '')),  # type: ignore
-                'published': str(api_data.get('publicatedAt', api_data.get('createdAt', ''))),  # type: ignore
-                'scraped_at': datetime.now().isoformat()
-            }
-            
             # サムネイル画像をダウンロード
             thumbnail_url = str(api_data.get('imageUrl', ''))  # type: ignore
             logger.info(f"サムネイルURL確認: '{thumbnail_url}' (長さ: {len(thumbnail_url)})")
@@ -723,15 +729,18 @@ class VRChatWorldScraper:
                 logger.info(f"サムネイルダウンロード開始: {world_id}")
                 thumbnail_path = self.download_thumbnail(thumbnail_url, world_id)
                 if thumbnail_path:
-                    world_info['thumbnail_path'] = thumbnail_path
+                    api_data['thumbnail_path'] = thumbnail_path
                     logger.info(f"サムネイルパス設定: {thumbnail_path}")
                 else:
                     logger.warning(f"サムネイルダウンロード失敗: {world_id}")
             else:
                 logger.warning(f"サムネイルURLが空またはNone - ワールドID: {world_id}")
             
-            logger.info(f"API経由でワールド情報取得成功: {world_info['title']}")
-            return world_info
+            # VRChat APIデータを処理してFirebase用の形式に変換
+            processed_world = self.process_world_data(api_data)
+            
+            logger.info(f"API経由でワールド情報取得成功: {processed_world.get('name', 'Unknown')}")
+            return processed_world
         
         logger.warning(f"API経由でのワールド情報取得に失敗: {world_id}")
         return None

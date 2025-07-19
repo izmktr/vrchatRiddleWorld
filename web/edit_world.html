@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRChatワールド編集</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .form-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: white;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            color: #2ecc71;
+        }
+
+        .message.error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+        }
+
+        .thumbnail-preview {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .confirmation-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .dialog-content h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .dialog-content p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                margin-right: 0;
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>VRChatワールド編集</h1>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="/" class="nav-btn">📋 ワールド一覧</a>
+            <a href="/dashboard.html" class="nav-btn">🏠 ダッシュボード</a>
+        </div>
+
+        <div id="loading" class="loading">
+            <p>データを読み込み中...</p>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div id="editForm" style="display: none;">
+            <div class="form-section">
+                <h2 style="color: white; margin-bottom: 20px;">基本情報</h2>
+                
+                <div class="form-group">
+                    <label for="title">ワールド名</label>
+                    <input type="text" id="title" class="form-control" placeholder="ワールド名を入力">
+                </div>
+
+                <div class="form-group">
+                    <label for="creator">作者</label>
+                    <input type="text" id="creator" class="form-control" placeholder="作者名を入力">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">説明</label>
+                    <textarea id="description" class="form-control" placeholder="ワールドの説明を入力"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="capacity">定員</label>
+                    <input type="number" id="capacity" class="form-control" placeholder="定員を入力" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="tags">タグ (カンマ区切り)</label>
+                    <input type="text" id="tags" class="form-control" placeholder="タグをカンマ区切りで入力">
+                </div>
+
+                <div class="form-group">
+                    <label for="imageUrl">サムネイル画像URL</label>
+                    <input type="url" id="imageUrl" class="form-control" placeholder="画像URLを入力">
+                    <img id="thumbnailPreview" class="thumbnail-preview" style="display: none;">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2 style="color: white; margin-bottom: 20px;">統計情報</h2>
+                
+                <div class="form-group">
+                    <label for="visits">訪問数</label>
+                    <input type="number" id="visits" class="form-control" placeholder="訪問数を入力" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="popularity">人気度</label>
+                    <input type="number" id="popularity" class="form-control" placeholder="人気度を入力" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="favorites">お気に入り数</label>
+                    <input type="number" id="favorites" class="form-control" placeholder="お気に入り数を入力" min="0">
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="updateBtn" class="btn btn-primary">💾 更新</button>
+                <button id="deleteBtn" class="btn btn-danger">🗑️ 削除</button>
+                <button id="cancelBtn" class="btn btn-secondary">❌ キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 削除確認ダイアログ -->
+    <div id="confirmDialog" class="confirmation-dialog">
+        <div class="dialog-content">
+            <h3>削除の確認</h3>
+            <p>このワールドを削除してもよろしいですか？<br>この操作は取り消せません。</p>
+            <button id="confirmDelete" class="btn btn-danger">削除</button>
+            <button id="cancelDelete" class="btn btn-secondary">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        let currentWorldId = null;
+        let originalData = null;
+
+        // URLパラメータからワールドIDを取得
+        function getWorldIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // メッセージ表示
+        function showMessage(text, type = 'success') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // ローディング表示
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('editForm').style.display = show ? 'none' : 'block';
+        }
+
+        // 数値フォーマット
+        function formatNumber(num) {
+            if (num === null || num === undefined || num === '') return 0;
+            return parseInt(num) || 0;
+        }
+
+        // 日付フォーマット
+        function formatDate(dateString) {
+            if (!dateString) return '不明';
+            
+            try {
+                let date;
+                if (typeof dateString === 'object' && dateString._seconds) {
+                    date = new Date(dateString._seconds * 1000);
+                } else {
+                    date = new Date(dateString);
+                }
+                
+                if (isNaN(date.getTime())) return '無効な日付';
+                
+                return date.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (error) {
+                console.error('Date formatting error:', error, dateString);
+                return '日付エラー';
+            }
+        }
+
+        // ワールドデータ読み込み
+        async function loadWorldData(worldId) {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`/api/vrchat_world/${worldId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    originalData = result.data;
+                    populateForm(result.data);
+                    showLoading(false);
+                } else {
+                    showMessage(`エラー: ${result.error}`, 'error');
+                    showLoading(false);
+                }
+            } catch (error) {
+                console.error('ワールドデータ読み込みエラー:', error);
+                showMessage('ワールドデータの読み込みに失敗しました', 'error');
+                showLoading(false);
+            }
+        }
+
+        // フォームにデータを設定
+        function populateForm(data) {
+            document.getElementById('title').value = data.title || data.name || '';
+            document.getElementById('creator').value = data.creator || data.authorName || '';
+            document.getElementById('description').value = data.description || '';
+            document.getElementById('capacity').value = formatNumber(data.capacity);
+            document.getElementById('tags').value = Array.isArray(data.tags) ? data.tags.join(', ') : '';
+            document.getElementById('imageUrl').value = data.imageUrl || '';
+            document.getElementById('visits').value = formatNumber(data.visits);
+            document.getElementById('popularity').value = formatNumber(data.popularity);
+            document.getElementById('favorites').value = formatNumber(data.favorites);
+            
+            // サムネイル表示
+            const imageUrl = data.imageUrl;
+            const thumbnailPreview = document.getElementById('thumbnailPreview');
+            if (imageUrl) {
+                thumbnailPreview.src = imageUrl;
+                thumbnailPreview.style.display = 'block';
+            }
+        }
+
+        // フォームからデータを取得
+        function getFormData() {
+            const tags = document.getElementById('tags').value
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag.length > 0);
+
+            return {
+                title: document.getElementById('title').value.trim(),
+                creator: document.getElementById('creator').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                capacity: parseInt(document.getElementById('capacity').value) || 0,
+                tags: tags,
+                imageUrl: document.getElementById('imageUrl').value.trim(),
+                visits: parseInt(document.getElementById('visits').value) || 0,
+                popularity: parseInt(document.getElementById('popularity').value) || 0,
+                favorites: parseInt(document.getElementById('favorites').value) || 0
+            };
+        }
+
+        // ワールド更新
+        async function updateWorld() {
+            try {
+                const formData = getFormData();
+                
+                const response = await fetch(`/api/vrchat_world/${currentWorldId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('ワールドが正常に更新されました！', 'success');
+                    originalData = { ...originalData, ...formData };
+                } else {
+                    showMessage(`更新エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('ワールド更新エラー:', error);
+                showMessage('ワールドの更新に失敗しました', 'error');
+            }
+        }
+
+        // ワールド削除
+        async function deleteWorld() {
+            try {
+                const response = await fetch(`/api/vrchat_world/${currentWorldId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('ワールドが削除されました', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showMessage(`削除エラー: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('ワールド削除エラー:', error);
+                showMessage('ワールドの削除に失敗しました', 'error');
+            }
+        }
+
+        // イベントリスナー設定
+        document.addEventListener('DOMContentLoaded', function() {
+            currentWorldId = getWorldIdFromURL();
+            
+            if (!currentWorldId) {
+                showMessage('ワールドIDが指定されていません', 'error');
+                return;
+            }
+            
+            loadWorldData(currentWorldId);
+            
+            // 更新ボタン
+            document.getElementById('updateBtn').addEventListener('click', updateWorld);
+            
+            // 削除ボタン
+            document.getElementById('deleteBtn').addEventListener('click', function() {
+                document.getElementById('confirmDialog').style.display = 'flex';
+            });
+            
+            // 削除確認
+            document.getElementById('confirmDelete').addEventListener('click', function() {
+                document.getElementById('confirmDialog').style.display = 'none';
+                deleteWorld();
+            });
+            
+            // 削除キャンセル
+            document.getElementById('cancelDelete').addEventListener('click', function() {
+                document.getElementById('confirmDialog').style.display = 'none';
+            });
+            
+            // キャンセルボタン
+            document.getElementById('cancelBtn').addEventListener('click', function() {
+                window.location.href = '/';
+            });
+            
+            // サムネイル画像プレビュー
+            document.getElementById('imageUrl').addEventListener('input', function() {
+                const imageUrl = this.value.trim();
+                const thumbnailPreview = document.getElementById('thumbnailPreview');
+                
+                if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('/'))) {
+                    thumbnailPreview.src = imageUrl;
+                    thumbnailPreview.style.display = 'block';
+                    thumbnailPreview.onerror = function() {
+                        this.style.display = 'none';
+                    };
+                } else {
+                    thumbnailPreview.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
