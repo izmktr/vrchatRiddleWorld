@@ -143,6 +143,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 2rem;
+            transition: opacity 0.3s ease;
         }
 
         .world-card {
@@ -164,6 +165,8 @@
             height: 200px;
             object-fit: cover;
             background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            display: block;
+            transition: opacity 0.3s ease;
         }
 
         .world-content {
@@ -342,7 +345,7 @@
                 <button onclick="exportWorlds()">📥 CSV出力</button>
             </div>
             <div class="control-row">
-                <input type="text" class="search-box" id="searchBox" placeholder="ワールド名、作者名、タグで検索..." onkeyup="filterWorlds()">
+                <input type="text" class="search-box" id="searchBox" placeholder="ワールド名、作者名、タグで検索..." oninput="debouncedFilterWorlds()">
                 <select class="sort-select" id="sortSelect" onchange="sortWorlds()">
                     <option value="popularity">人気順</option>
                     <option value="visits">訪問数順</option>
@@ -424,6 +427,15 @@
             }
         ];
 
+        // デバウンス用の変数
+        let filterTimeout = null;
+
+        // デバウンス付きのフィルタ関数
+        function debouncedFilterWorlds() {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(filterWorlds, 300); // 300ms後に実行
+        }
+
         // データ読み込み
         async function loadWorlds() {
             const loading = document.getElementById('loading');
@@ -433,14 +445,26 @@
             errorMessage.style.display = 'none';
 
             try {
-                // TODO: Firebase接続時は実際のAPIを呼び出し
-                // const response = await fetch('/api/vrchat-worlds');
-                // const data = await response.json();
-                // allWorlds = data.worlds || [];
+                // Firebase APIからデータを取得
+                const response = await fetch('/api/vrchat_worlds');
                 
-                // 現在はダミーデータを使用
-                await new Promise(resolve => setTimeout(resolve, 1000)); // 読み込み時間をシミュレート
-                allWorlds = [...dummyWorlds];
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('APIレスポンス:', data);
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'データ取得に失敗しました');
+                }
+                
+                allWorlds = Array.isArray(data.worlds) ? data.worlds : [];
+                console.log(`${allWorlds.length}件のワールドデータを取得しました`);
+                
+                if (allWorlds.length === 0) {
+                    console.log('Firebaseにワールドデータが登録されていません');
+                }
                 
                 filteredWorlds = [...allWorlds];
                 displayWorlds();
@@ -450,9 +474,9 @@
                 console.error('データ読み込みエラー:', error);
                 showError('ワールドデータの読み込みに失敗しました: ' + error.message);
                 
-                // エラー時はダミーデータを表示
-                allWorlds = [...dummyWorlds];
-                filteredWorlds = [...allWorlds];
+                // エラー時は空の配列を設定
+                allWorlds = [];
+                filteredWorlds = [];
                 displayWorlds();
                 updateStats();
             } finally {
@@ -487,34 +511,58 @@
 
             emptyState.style.display = 'none';
             
-            worldGrid.innerHTML = filteredWorlds.map(world => `
+            // レイアウトシフトを防ぐためにトランジション中は透明度を下げる
+            worldGrid.style.opacity = '0.3';
+            
+            worldGrid.innerHTML = filteredWorlds.map(world => {
+                // 画像URLを安全に決定
+                let imageUrl = 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World';
+                
+                if (world.thumbnail_path) {
+                    // ローカルサムネイルパスがある場合
+                    const filename = world.thumbnail_path.includes('\\') ? 
+                        world.thumbnail_path.split('\\').pop() : world.thumbnail_path.split('/').pop();
+                    imageUrl = `/thumbnail/${filename}`;
+                } else if (world.thumbnail_url) {
+                    // ローカルサムネイルURLがある場合
+                    const filename = world.thumbnail_url.includes('/') ? 
+                        world.thumbnail_url.split('/').pop() : world.thumbnail_url;
+                    imageUrl = `/thumbnail/${filename}`;
+                } else if (world.image_url) {
+                    imageUrl = world.image_url;
+                }
+                
+                return `
                 <div class="world-card">
-                    <img src="${world.image_url || 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World'}" 
-                         alt="${escapeHtml(world.name)}" 
+                    <img src="${imageUrl}" 
+                         alt="${escapeHtml(world.title || world.name || '名前なし')}" 
                          class="world-image"
-                         onerror="this.src='https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World'">
+                         loading="lazy"
+                         style="opacity: 0;"
+                         onload="this.style.opacity='1';"
+                         onerror="this.src='https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World'; this.style.opacity='1';">
                     
                     <div class="world-content">
-                        <div class="world-title">${escapeHtml(world.name)}</div>
-                        <div class="world-author">👤 ${escapeHtml(world.author_name)}</div>
+                        <div class="world-title">${escapeHtml(world.title || world.name || '名前なし')}</div>
+                        <div class="world-author">👤 ${escapeHtml(world.creator || world.author_name || '作者不明')}</div>
                         <div class="world-description">${escapeHtml(world.description || '説明なし')}</div>
                         
                         <div class="world-stats">
                             <div class="stat-item">
                                 <span class="stat-icon">👥</span>
-                                <span>${formatNumber(world.visits)} 訪問</span>
+                                <span>${formatNumber(world.visits || 0)} 訪問</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-icon">⭐</span>
-                                <span>${world.popularity}% 人気</span>
+                                <span>${formatNumber(world.popularity || 0)}% 人気</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-icon">❤️</span>
-                                <span>${formatNumber(world.favorites)} お気に入り</span>
+                                <span>${formatNumber(world.favorites || 0)} お気に入り</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-icon">🏠</span>
-                                <span>定員 ${world.capacity}人</span>
+                                <span>定員 ${formatNumber(world.capacity || 0)}人</span>
                             </div>
                         </div>
                         
@@ -529,8 +577,13 @@
                             <span>更新: ${formatDate(world.scraped_at)}</span>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                </div>`
+            }).join('');
+            
+            // DOM更新完了後にスムーズに表示
+            requestAnimationFrame(() => {
+                worldGrid.style.opacity = '1';
+            });
         }
 
         // 統計更新
@@ -562,7 +615,9 @@
                 filteredWorlds = [...allWorlds];
             } else {
                 filteredWorlds = allWorlds.filter(world => 
+                    (world.title && world.title.toLowerCase().includes(searchTerm)) ||
                     (world.name && world.name.toLowerCase().includes(searchTerm)) ||
+                    (world.creator && world.creator.toLowerCase().includes(searchTerm)) ||
                     (world.author_name && world.author_name.toLowerCase().includes(searchTerm)) ||
                     (world.description && world.description.toLowerCase().includes(searchTerm)) ||
                     (world.tags && world.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
@@ -588,7 +643,7 @@
                     case 'updated_at':
                         return new Date(b.scraped_at || 0) - new Date(a.scraped_at || 0);
                     case 'name':
-                        return (a.name || '').localeCompare(b.name || '');
+                        return (a.title || a.name || '').localeCompare(b.title || b.name || '');
                     default:
                         return 0;
                 }
@@ -607,8 +662,8 @@
             const csv = [
                 ['ワールド名', '作者', '説明', '訪問数', '人気度', 'お気に入り', '定員', 'タグ', '作成日', '更新日'],
                 ...filteredWorlds.map(world => [
-                    world.name || '',
-                    world.author_name || '',
+                    world.title || world.name || '',
+                    world.creator || world.author_name || '',
                     world.description || '',
                     world.visits || 0,
                     world.popularity || 0,
@@ -618,7 +673,10 @@
                     world.publication_date || '',
                     world.scraped_at || ''
                 ])
-            ].map(row => row.map(field => `"${(field || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+            ].map(row => row.map(field => {
+                const value = field == null ? '' : String(field);
+                return `"${value.replace(/"/g, '""')}"`;
+            }).join(',')).join('\n');
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -636,8 +694,11 @@
 
         // ユーティリティ関数
         function escapeHtml(text) {
+            if (text == null || text === undefined) {
+                return '';
+            }
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = String(text);
             return div.innerHTML;
         }
 
@@ -650,12 +711,18 @@
         }
 
         function formatNumber(num) {
-            if (num >= 1000000) {
-                return (num / 1000000).toFixed(1) + 'M';
-            } else if (num >= 1000) {
-                return (num / 1000).toFixed(1) + 'K';
+            // null、undefined、NaNをチェック
+            if (num == null || isNaN(num)) {
+                return '0';
             }
-            return num.toString();
+            
+            const numValue = Number(num);
+            if (numValue >= 1000000) {
+                return (numValue / 1000000).toFixed(1) + 'M';
+            } else if (numValue >= 1000) {
+                return (numValue / 1000).toFixed(1) + 'K';
+            }
+            return numValue.toString();
         }
 
         // 初期データ読み込み

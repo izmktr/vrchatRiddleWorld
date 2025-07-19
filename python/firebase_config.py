@@ -178,18 +178,10 @@ class FirebaseManager:
         
         try:
             collection_ref = self.db.collection('vrchat_worlds')
+            logger.info(f"VRChatワールドデータ取得開始: limit={limit}, sort_by={sort_by}")
             
-            # ソート条件を設定
-            if sort_by == 'popularity':
-                query = collection_ref.order_by('popularity', direction=firestore.Query.DESCENDING)
-            elif sort_by == 'visits':
-                query = collection_ref.order_by('visits', direction=firestore.Query.DESCENDING)
-            elif sort_by == 'created_at':
-                query = collection_ref.order_by('created_at', direction=firestore.Query.DESCENDING)
-            else:
-                query = collection_ref.order_by('updated_at', direction=firestore.Query.DESCENDING)
-            
-            docs = query.limit(limit).stream()
+            # まず全データを取得してみる（ソートなし）
+            docs = collection_ref.limit(limit).stream()
             
             results = []
             for doc in docs:
@@ -198,6 +190,11 @@ class FirebaseManager:
                 results.append(data)
             
             logger.info(f"{len(results)}件のVRChatワールドデータを取得しました")
+            
+            # デバッグ用：最初の1件のデータ構造を確認
+            if results:
+                logger.info(f"サンプルデータ構造: {list(results[0].keys())}")
+            
             return results
             
         except Exception as e:

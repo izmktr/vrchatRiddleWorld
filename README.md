@@ -1,8 +1,8 @@
-# ウェブスクレイピング & Firebase連携ツール
+# VRChatワールドスクレイピング & Firebase連携ツール
 
-PythonでWebサイトをスクレイピングし、収集したデータをFirebaseに保存して、Webページで表示するプロジェクトです。
+VRChatワールド情報を自動収集し、Firebaseデータベースに保存して、Webページで表示するプロジェクトです。サムネイル画像のダウンロード機能、2FA認証対応、バッチ処理によるワールド情報の一括取得が可能です。
 
-## 🚀 クイックスタート（VRChatワールドスクレイピング）
+## 🚀 クイックスタート
 
 ```powershell
 # 1. 依存関係インストール
@@ -12,42 +12,59 @@ pip install -r requirements.txt
 VRCHAT_USERNAME=your-username
 VRCHAT_PASSWORD=your-password
 FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_SERVICE_ACCOUNT_PATH=config/firebase-service-account.json
 
 # 3. ワールドURLリスト作成
-echo "https://vrchat.com/home/world/wrld_76ff519f-c4fa-4c7d-8ed0-65ae3a50f1e8" > vrcworld.txt
+echo "https://vrchat.com/home/world/wrld_xxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" > vrcworld.txt
 
-# 4. バッチスクレイピング実行
-python batch_scraper.py --csv
+# 4. バッチスクレイピング実行（サムネイル画像も自動ダウンロード）
+python python/batch_scraper.py --csv
 
 # 5. WebUI確認
-python app.py
+python python/app.py
 # http://localhost:5000/vrchat_worlds.html にアクセス
 ```
 
-## 🚀 機能
+## ✨ 主要機能
 
-- **ウェブスクレイピング**: BeautifulSoup4とrequestsを使用したWebデータ収集
-- **VRChatワールドスクレイピング**: VRChat API経由でワールドデータを収集
-- **Firebase連携**: Firestore NoSQLデータベースへの自動保存
-- **Web表示**: モダンなWebインターフェースでのデータ表示
-- **定期実行**: スケジューラーによる自動データ収集
-- **認証対応**: VRChatログイン + 2FA認証
-- **CSV出力**: 収集データのCSVエクスポート機能
+- **🌐 VRChatワールドスクレイピング**: VRChat API経由でワールド詳細情報を収集
+- **🖼️ サムネイル画像ダウンロード**: ワールドサムネイル画像の自動ダウンロード・保存
+- **🔐 2FA認証対応**: VRChatの二段階認証に対応した安全なログイン
+- **📊 Firebase連携**: Firestore NoSQLデータベースへの自動保存
+- **🚀 バッチ処理**: 大量のワールドURLを効率的に一括処理
+- **📈 進捗表示**: リアルタイムでスクレイピング進捗を表示
+- **💾 セッション管理**: 認証状態を保持して効率的な処理を実現
+- **📄 CSV出力**: 収集データのCSVエクスポート機能
+- **🌐 Web表示**: モダンなWebインターフェースでのデータ表示
+- **🛡️ エラーハンドリング**: 堅牢なエラー処理とリトライ機能
 
 ## 📁 プロジェクト構造
 
 ```
 nazoweb/
-├── scraper.py              # メインスクレイピングスクリプト
-├── vrchat_auth.py          # VRChat認証モジュール
-├── vrchat_scraper.py       # VRChatワールドスクレイピング
-├── firebase_config.py      # Firebase設定と操作
-├── scheduler.py            # 定期実行スケジューラー
-├── app.py                  # Flask開発サーバー
-├── requirements.txt        # Python依存関係
-├── .env.example           # 環境変数サンプル
-├── web/
-│   ├── index.html         # 一般データ表示用Webページ
+├── python/                     # 🐍 Pythonスクリプト
+│   ├── app.py                  # Flask開発サーバー
+│   ├── batch_scraper.py        # バッチ処理メインスクリプト
+│   ├── vrchat_auth.py          # VRChat認証モジュール（2FA対応）
+│   ├── vrchat_scraper.py       # VRChatワールドスクレイピング
+│   ├── firebase_config.py      # Firebase設定と操作
+│   ├── scheduler.py            # 定期実行スケジューラー
+│   └── scraper.py              # 汎用スクレイピングスクリプト
+├── web/                        # 🌐 Webインターフェース
+│   ├── index.html              # 一般データ表示用Webページ
+│   └── vrchat_worlds.html      # VRChatワールド表示用Webページ
+├── config/                     # ⚙️ 設定ファイル
+│   ├── firebase-service-account.json  # Firebase認証情報
+│   └── vrchat_session.json     # VRChatセッション情報（自動生成）
+├── thumbnail/                  # 🖼️ サムネイル画像（自動生成）
+│   └── wrld_*.jpg              # ワールドサムネイル画像
+├── .vscode/                    # 💻 VS Code設定
+│   └── tasks.json              # タスク定義
+├── requirements.txt            # Python依存関係
+├── .env                        # 環境変数（.env.exampleを参考に作成）
+├── vrcworld.txt               # ワールドURLリスト
+└── README.md                  # このファイル
+```
 │   └── vrchat_worlds.html # VRChatワールド表示用Webページ
 ├── config/
 │   └── (Firebase設定ファイル配置場所)
@@ -61,8 +78,8 @@ nazoweb/
 
 ```powershell
 # 仮想環境作成（推奨）
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 
 # 依存関係インストール
 pip install -r requirements.txt
@@ -71,27 +88,34 @@ pip install -r requirements.txt
 ### 2. Firebase設定
 
 1. [Firebase Console](https://console.firebase.google.com/)でプロジェクト作成
-2. Firestoreデータベースを有効化
+2. Firestoreデータベースを有効化（データベース名: `vrcworld` 推奨）
 3. サービスアカウントキーをダウンロード
 4. `config/firebase-service-account.json`として保存
 
-### 3. VRChat認証設定
+### 3. 環境変数設定
 
-VRChatアカウントの認証情報を`.env`ファイルに追加：
+`.env`ファイルを作成し、以下の設定を追加：
 
 ```env
+# VRChat認証情報
 VRCHAT_USERNAME=your-vrchat-username
 VRCHAT_PASSWORD=your-vrchat-password
+
+# Firebase設定
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_SERVICE_ACCOUNT_PATH=config/firebase-service-account.json
+FIREBASE_DATABASE_NAME=vrcworld
 ```
 
 **⚠️ セキュリティ注意事項:**
 - VRChatのパスワードは安全に管理してください
 - 2FA認証が有効な場合、実行時にワンタイムパスワードの入力が求められます
-- セッション情報は`config/vrchat_session.json`に保存されます
+- セッション情報は`config/vrchat_session.json`に自動保存されます
+- `.env`ファイルは絶対にGitにコミットしないでください
 
-### 4. Web設定
+### 4. Web設定（オプション）
 
-`web/index.html`のFirebase設定を実際の設定値に変更してください：
+Webインターフェースを使用する場合、`web/vrchat_worlds.html`のFirebase設定を実際の設定値に変更してください：
 
 ```javascript
 const firebaseConfig = {
@@ -104,93 +128,123 @@ const firebaseConfig = {
 
 ## 🚀 使用方法
 
-### 通常のWebスクレイピング
+### 1. ワールドURLリストの準備
+
+`vrcworld.txt`ファイルにスクレイピングしたいVRChatワールドのURLを1行ずつ記載：
+
+```
+https://vrchat.com/home/world/wrld_f8d61b3c-4e25-4c33-813a-dc6d07f8aae6
+https://vrchat.com/home/world/wrld_945c28af-bdcf-41b4-b5b4-7d0ff6c77444
+```
+
+### 2. バッチ処理でワールド情報を収集
 
 ```powershell
-# 一般的なWebサイトのスクレイピング
-python scraper.py
+# 基本的なバッチ処理（サムネイル画像も自動ダウンロード）
+python python/batch_scraper.py
+
+# CSV出力付きでバッチ処理
+python python/batch_scraper.py --csv
+
+# カスタムファイルとリクエスト間隔を指定
+python python/batch_scraper.py --file custom_worlds.txt --delay 3.0 --csv
 ```
 
-### VRChatワールドスクレイピング
+### 3. VS Codeタスクの使用
+
+VS Codeでプロジェクトを開いている場合、以下のタスクを使用できます：
+
+- **Run Batch Scraper**: バッチ処理を実行
+- **Start Flask Server**: Webサーバーを起動
+- **Install Dependencies**: 依存関係をインストール
+
+`Ctrl+Shift+P` → `Tasks: Run Task` から選択できます。
+
+### 4. Webインターフェースでデータ確認
 
 ```powershell
-# 人気ワールド20件を取得
-python scraper.py --vrchat --count 20
+# Flask開発サーバーを起動
+python python/app.py
 
-# フィーチャーワールドを取得
-python scraper.py --vrchat --featured
-
-# キーワード検索
-python scraper.py --vrchat --keyword "avatar" --count 30
-
-# ファイルからワールドURLを一括処理
-python batch_scraper.py --csv
-
-# または個別にファイル指定
-python vrchat_scraper.py --batch-file vrcworld.txt
+# ブラウザで以下にアクセス
+# http://localhost:5000/vrchat_worlds.html
 ```
 
-### 📁 ファイルからのバッチスクレイピング
+## 📋 出力データ
 
-複数のVRChatワールドを一括処理する場合の手順：
+### 収集される情報
 
-#### 1. ワールドURLリストファイルの準備
+- **ワールドID**: VRChatワールドの一意識別子
+- **タイトル**: ワールド名
+- **作者**: ワールド作成者
+- **説明**: ワールドの説明文
+- **定員**: 最大収容人数
+- **公開日**: ワールドの公開日時
+- **サムネイルURL**: サムネイル画像のURL
+- **サムネイル画像**: ローカルにダウンロードされた画像ファイル
+- **スクレイピング日時**: データ収集日時
 
-`vrcworld.txt`ファイルを作成し、1行につき1つのVRChatワールドURLを記載：
+### 出力形式
 
-```
-https://vrchat.com/home/world/wrld_76ff519f-c4fa-4c7d-8ed0-65ae3a50f1e8
-https://vrchat.com/home/world/wrld_4432ea9b-729c-46e3-8f95-18f17580181f
-https://vrchat.com/home/world/wrld_a61cdabe-1d89-4b5c-a826-ab1478a53c54
-```
+- **Firebase Firestore**: NoSQLデータベースに構造化データとして保存
+- **CSV**: 表形式ファイルとして出力（`--csv`オプション使用時）
+- **ログファイル**: 処理詳細ログ（`batch_scraper.log`）
 
-#### 2. バッチ処理の実行
+## 🔧 高度な設定
+
+### バッチ処理オプション
 
 ```powershell
-# CSVファイル出力付きでバッチ処理実行
-python batch_scraper.py --csv
+# リクエスト間隔を3秒に設定（サーバー負荷軽減）
+python python/batch_scraper.py --delay 3.0
 
-# または基本的なバッチ処理
-python batch_scraper.py
+# カスタムファイルから読み込み
+python python/batch_scraper.py --file custom_worlds.txt
+
+# 出力ファイル名を指定
+python python/batch_scraper.py --csv --output my_worlds.csv
 ```
 
-#### 3. 2FA認証対応
+### 2FA認証の処理
 
-**方法A: インタラクティブ入力**
-```powershell
-python batch_scraper.py --csv
-# 2FA認証画面が表示されたら、メールで受信した6桁のコードを入力
+### サムネイル画像の管理
+
+- サムネイル画像は`thumbnail/`フォルダに自動保存
+- ファイル名: `{world_id}.jpg`
+- 既存ファイルがある場合は重複ダウンロードをスキップ
+- 画像ファイルは`.gitignore`に含まれ、Gitで追跡されません
+
+## 📊 処理性能とログ
+
+### 実行例
+
+```
+🚀 バッチ処理開始: 2 件のワールドをスクレイピングします
+⏱️  リクエスト間隔: 2.0 秒
+
+📍 進行状況: 1/2 (50.0%)
+🔗 処理中: https://vrchat.com/home/world/wrld_xxxxx...
+✅ 成功: Ship Graveyard with Temple Dungeon
+👤 作者: Phin
+🏠 定員: 32人
+🖼️ サムネイル保存完了: wrld_xxxxx.jpg (760,275 bytes)
+💾 Firebase保存完了
+
+============================================================
+🎉 バッチ処理完了!
+✅ 成功: 2 件
+❌ 失敗: 0 件
+📊 成功率: 100.0%
+⏰ 総処理時間: 5.3 秒
+⚡ 平均処理時間: 2.7 秒/件
 ```
 
-**方法B: 環境変数での事前設定**
-```powershell
-# .envファイルに2FAコードを追加
-echo "VRCHAT_2FA_CODE=123456" >> .env
-python batch_scraper.py --csv
-```
+### ログ出力
 
-**方法C: ヘルパースクリプト使用**
-```powershell
-# インタラクティブにコードを入力し、.envファイルに自動保存
-python vrchat_2fa_helper.py
-# その後バッチ処理実行
-python batch_scraper.py --csv
-```
-
-#### 4. 出力ファイル
-
-バッチ処理完了後、以下のファイルが生成されます：
-
-- **CSVファイル**: `vrchat_worlds_batch_YYYYMMDD_HHMMSS.csv`
-  - ワールドID、タイトル、作者、説明、定員、サムネイルURL、取得日時
-- **Firestoreデータベース**: リアルタイムでWebUI表示可能
-- **ログファイル**: `batch_scraper.log`（詳細な処理ログ）
-
-#### 5. 処理の特徴
-
-- **進行状況表示**: リアルタイムで処理状況を表示
-- **エラーハンドリング**: 失敗したURLをスキップして継続
-- **レート制限対応**: VRChatのAPI制限を考慮した待機時間
+- **進行状況**: リアルタイムで処理状況を表示
+- **成功/失敗件数**: 処理完了時に統計情報を表示
+- **処理時間**: 総時間と平均時間を計測
+- **詳細ログ**: `batch_scraper.log`ファイルに保存
 - **統計情報**: 成功率、処理時間、取得データ数の表示
 - **重複防止**: 既存データの更新（merge処理）
 
@@ -203,47 +257,55 @@ python batch_scraper.py --csv
 #### 📊 バッチ処理実行例
 
 ```powershell
-PS D:\gitproject\nazoweb> python batch_scraper.py --csv
-Firebase初期化開始 - Project ID: vrcriddleworld, Database: vrcworld
-Firebase Admin SDK初期化完了（サービスアカウント使用、DB: vrcworld）
-📁 ファイル 'vrcworld.txt' から 3 件のURLを読み込みました
-🚀 バッチ処理開始: 3 件のワールドをスクレイピングします
-⏱️  リクエスト間隔: 2.0 秒
+## 🔍 トラブルシューティング
 
-📍 進行状況: 1/3 (33.3%)
-🔗 処理中: https://vrchat.com/home/world/wrld_76ff519f-c4fa-4c7d-8ed0-65ae3a50f1e8
-✅ 成功: Riddles of Nowhere
-👤 作者: chak_chak127
-🏠 定員: 32人
-💾 Firebase保存完了
+### よくある問題
 
-============================================================
-🎉 バッチ処理完了!
-============================================================
-✅ 成功: 3 件
-❌ 失敗: 0 件
-📊 成功率: 100.0%
-⏰ 総処理時間: 8.5 秒
-⚡ 平均処理時間: 2.8 秒/件
-📥 CSV出力完了: vrchat_worlds_batch_20250719_040121.csv
+#### 1. VRChat認証エラー
 ```
+Error: Authentication failed
+```
+**解決策:**
+- `.env`ファイルの`VRCHAT_USERNAME`と`VRCHAT_PASSWORD`を確認
+- 2FA認証が有効な場合、メール認証コードを正しく入力
+- セッションファイル`config/vrchat_session.json`を削除して再認証
 
-### 定期実行
+#### 2. Firebase接続エラー
+```
+Error: Firebase initialization failed
+```
+**解決策:**
+- `config/firebase-service-account.json`ファイルの存在確認
+- Firebase プロジェクトIDが正しく設定されているか確認
+- Firestoreデータベースが有効化されているか確認
+
+#### 3. パスエラー
+```
+FileNotFoundError: vrcworld.txt
+```
+**解決策:**
+- `vrcworld.txt`ファイルがプロジェクトルートに存在するか確認
+- ファイル内容がVRChatワールドURLの形式かチェック
+
+#### 4. サムネイルダウンロードエラー
+```
+サムネイルダウンロードエラー
+```
+**解決策:**
+- `thumbnail/`フォルダの書き込み権限確認
+- インターネット接続の確認
+- VRChat APIサーバーの状況確認
+
+### デバッグ方法
 
 ```powershell
-# スケジューラー開始（1時間ごとに実行）
-python scheduler.py
+# 詳細ログを確認
+Get-Content batch_scraper.log | Select-Object -Last 50
+
+# 特定のワールドのみテスト
+echo "https://vrchat.com/home/world/wrld_xxxxx..." > test.txt
+python python/batch_scraper.py --file test.txt --csv
 ```
-
-### Web表示
-
-1. **一般データ表示**: `web/index.html`をブラウザで開く
-2. **VRChatワールド表示**: `web/vrchat_worlds.html`をブラウザで開く
-3. または、簡易サーバー起動:
-
-```powershell
-cd web
-python -m http.server 8000
 ```
 
 その後、以下にアクセス:
@@ -285,69 +347,78 @@ Firestoreに保存されるデータ形式：
     "description": "メタ説明",
     "headings": ["見出し1", "見出し2"],
     "scraped_at": "2024-01-01T12:00:00",
-    "content_length": 1500,
-    "created_at": "Firestore ServerTimestamp",
-    "updated_at": "Firestore ServerTimestamp"
+## 📄 技術仕様
+
+### 依存関係
+
+主要なPythonライブラリ：
+
+- **requests**: HTTP リクエスト処理
+- **beautifulsoup4**: HTML パース
+- **firebase-admin**: Firebase Admin SDK
+- **google-cloud-firestore**: Firestore データベース
+- **python-dotenv**: 環境変数管理
+- **flask**: Web開発フレームワーク
+- **schedule**: 定期実行スケジューラー
+
+### データベース構造（Firestore）
+
+```javascript
+collection: "vrchat_worlds"
+document: {
+    "world_id": "wrld_xxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "title": "ワールド名",
+    "creator": "作者名",
+    "description": "ワールドの説明",
+    "capacity": "32",
+    "thumbnail_url": "https://api.vrchat.cloud/api/1/file/...",
+    "thumbnail_path": "thumbnail/wrld_xxxxx.jpg",
+    "published": "2023-12-01T10:30:00Z",
+    "scraped_at": "2025-07-19T14:03:34.273Z"
 }
 ```
 
-## 🔧 トラブルシューティング
+### ファイル構造
 
-### よくある問題
+- **設定ファイル**: `config/` フォルダに Firebase 認証情報
+- **画像ファイル**: `thumbnail/` フォルダに サムネイル画像
+- **ログファイル**: プロジェクトルートに処理ログ
+- **出力ファイル**: CSV ファイルは プロジェクトルートに生成
 
-1. **Firebase接続エラー**
-   - サービスアカウントキーのパスを確認
-   - プロジェクトIDが正しいか確認
-   - Firestoreデータベースが作成されているか確認（デフォルト名: `(default)`）
+## 🤝 貢献
 
-2. **スクレイピングエラー**
-   - User-Agentヘッダーの設定確認
-   - レート制限による待機時間の調整
+プロジェクトへの貢献を歓迎します！
 
-3. **VRChat 2FA認証エラー**
-   - メールで受信した6桁のコードを正確に入力
-   - コードの有効期限（通常5-10分）を確認
-   - `.env`ファイルの`VRCHAT_2FA_CODE`設定を確認
+1. このリポジトリをフォーク
+2. フィーチャーブランチを作成 (`git checkout -b feature/AmazingFeature`)
+3. 変更をコミット (`git commit -m 'Add some AmazingFeature'`)
+4. ブランチにプッシュ (`git push origin feature/AmazingFeature`)
+5. プルリクエストを作成
 
-4. **ファイル読み込みエラー**
-   - `vrcworld.txt`ファイルがUTF-8エンコーディングで保存されているか確認
-   - ファイル内のURLが正しい形式（`https://vrchat.com/home/world/wrld_...`）か確認
-   - 空行や不正な文字が含まれていないか確認
+## � ライセンス
 
-5. **バッチ処理の中断**
-   - VRChatのレート制限（429エラー）: 処理間隔を長くする
-   - セッション切れ: 再認証が自動実行される
-   - ネットワークエラー: 失敗したURLは後で再実行可能
+このプロジェクトは MIT ライセンスのもとで公開されています。詳細は `LICENSE` ファイルを参照してください。
 
-6. **Web表示でデータが表示されない**
-   - Firebase Web設定の確認
-   - ブラウザの開発者ツールでエラーチェック
-   - Firestoreのセキュリティルール確認
+## ⚠️ 免責事項
 
-### ログファイル
-
-- `scraper.log`: スクレイピング実行ログ
-- `scheduler.log`: スケジューラー実行ログ
-- `batch_scraper.log`: バッチ処理実行ログ
-- VRChatセッション: `config/vrchat_session.json`（自動生成）
-
-### 📁 関連ファイル
-
-- `vrcworld.txt`: VRChatワールドURLリスト（バッチ処理用）
-- `vrchat_worlds_batch_*.csv`: バッチ処理結果のCSVファイル
-- `.env`: 環境変数設定（認証情報、2FAコードなど）
+- このツールは教育・研究目的で作成されています
+- VRChatの利用規約を遵守してご使用ください
+- スクレイピング対象サイトの robots.txt やレート制限を尊重してください
+- 取得したデータの利用は自己責任でお願いします
 
 ## 🛡️ 注意事項
 
-- **robots.txt**: 対象サイトのrobots.txtを必ず確認
-- **レート制限**: サイトに負荷をかけないよう適切な間隔で実行
-- **利用規約**: 各サイトの利用規約を遵守
-- **個人情報**: 個人情報の収集は避ける
-- **著作権**: 著作権に配慮したデータ収集
+## ⚠️ 免責事項
 
-## 📝 ライセンス
+- このツールは教育・研究目的で作成されています
+- VRChatの利用規約を遵守してご使用ください
+- スクレイピング対象サイトの robots.txt やレート制限を尊重してください
+- 取得したデータの利用は自己責任でお願いします
 
-このプロジェクトはMITライセンスの下で公開されています。
+---
+
+**Last Updated**: 2025年7月19日  
+**Version**: 2.0.0 - サムネイル画像ダウンロード機能、Pythonファイル整理、改良されたバッチ処理
 
 ## 🤝 貢献
 
