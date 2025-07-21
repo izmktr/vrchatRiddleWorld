@@ -610,8 +610,8 @@
             errorMessage.style.display = 'none';
 
             try {
-                // Firebase APIからデータを取得（緊急: 制限を30件に戻す）
-                const response = await fetch('/api/vrchat_worlds?limit=30');
+                // Firebase APIからデータを取得（制限を100件に増加）
+                const response = await fetch('/api/vrchat_worlds?limit=100');
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);

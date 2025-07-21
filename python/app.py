@@ -91,9 +91,9 @@ def get_data():
 def get_vrchat_worlds():
     """VRChatワールドデータのAPI（読み取り最適化版）"""
     try:
-        # クエリパラメータから制限数を取得（緊急: デフォルトを30に戻す）
+        # クエリパラメータから制限数を取得
         limit = request.args.get('limit', 30, type=int)
-        limit = min(limit, 50)  # 緊急: 最大50件に制限（読み取り数制御）
+        limit = min(limit, 100)  # 最大100件に制限
         
         data: List[Dict[str, Any]] = firebase_manager.get_vrchat_worlds(limit=limit)  # type: ignore
         
@@ -120,6 +120,29 @@ def get_vrchat_worlds():
         return jsonify(response_data)
     except Exception as e:
         logger.error(f"VRChatワールドデータ取得エラー: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'worlds': []
+        }), 500
+
+@app.route('/api/vrchat_worlds/all')
+def get_all_vrchat_worlds():
+    """全VRChatワールドデータのAPI（制限なし）"""
+    try:
+        data: List[Dict[str, Any]] = firebase_manager.get_all_vrchat_worlds()  # type: ignore
+        
+        response_data: Dict[str, Any] = {  # type: ignore
+            'success': True,
+            'worlds': data,
+            'count': len(data),  # type: ignore
+            'reads_used': len(data),  # 実際の読み取り数を表示  # type: ignore
+            'limit_applied': None  # 制限なし
+        }
+            
+        return jsonify(response_data)
+    except Exception as e:
+        logger.error(f"全VRChatワールドデータ取得エラー: {e}")
         return jsonify({
             'success': False,
             'error': str(e),
