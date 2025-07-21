@@ -277,7 +277,7 @@ class VRChatWorldScraper:
         """
         logger.info(f"人気ワールド {count}件のスクレイピングを開始")
         
-        all_worlds = []
+        all_worlds: List[Dict[str, Any]] = []
         processed_count = 0
         offset = 0
         batch_size = 60  # VRChat APIの制限
@@ -343,7 +343,7 @@ class VRChatWorldScraper:
         logger.info("フィーチャーワールドのスクレイピングを開始")
         
         worlds = self.search_worlds(featured=True, number=100)
-        processed_worlds = []
+        processed_worlds: List[Dict[str, Any]] = []
         
         for world in worlds:
             try:
@@ -375,7 +375,7 @@ class VRChatWorldScraper:
         logger.info(f"キーワード '{keyword}' でワールド検索")
         
         worlds = self.search_worlds(search=keyword, number=count)
-        processed_worlds = []
+        processed_worlds: List[Dict[str, Any]] = []
         
         for world in worlds:
             try:
@@ -666,7 +666,7 @@ class VRChatWorldScraper:
         """
         複数のワールドURLをバッチ処理でスクレイピング
         """
-        results = []
+        results: List[Dict[str, Any]] = []
         total_urls = len(urls)
         
         logger.info(f"バッチ処理開始: {total_urls}件のワールドをスクレイピングします")
