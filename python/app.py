@@ -7,6 +7,7 @@ from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 import os
 import logging
+from typing import Any, Dict, List
 from firebase_config import FirebaseManager
 
 app = Flask(__name__)
@@ -59,12 +60,12 @@ def manage_worlds():
         return "<h1>manage_worlds.htmlが見つかりません</h1>", 404
 
 @app.route('/web/<path:filename>')
-def serve_web_files(filename):
+def serve_web_files(filename: str):
     """Webファイルの配信"""
     return send_from_directory(os.path.join(project_root, 'web'), filename)
 
 @app.route('/thumbnail/<path:filename>')
-def serve_thumbnail_files(filename):
+def serve_thumbnail_files(filename: str):
     """サムネイル画像の配信"""
     return send_from_directory(os.path.join(project_root, 'thumbnail'), filename)
 
@@ -72,11 +73,11 @@ def serve_thumbnail_files(filename):
 def get_data():
     """スクレイピングデータのAPI"""
     try:
-        data = firebase_manager.get_scraped_data(limit=100)
+        data: List[Dict[str, Any]] = firebase_manager.get_scraped_data(limit=100)  # type: ignore
         return jsonify({
             'success': True,
             'data': data,
-            'count': len(data)
+            'count': len(data)  # type: ignore
         })
     except Exception as e:
         logger.error(f"データ取得エラー: {e}")
@@ -90,17 +91,33 @@ def get_data():
 def get_vrchat_worlds():
     """VRChatワールドデータのAPI（読み取り最適化版）"""
     try:
-        # クエリパラメータから制限数を取得（デフォルト30に削減）
+        # クエリパラメータから制限数を取得（緊急: デフォルトを30に戻す）
         limit = request.args.get('limit', 30, type=int)
-        limit = min(limit, 100)  # 最大100件に制限
+        limit = min(limit, 50)  # 緊急: 最大50件に制限（読み取り数制御）
         
-        data = firebase_manager.get_vrchat_worlds(limit=limit)
-        return jsonify({
+        data: List[Dict[str, Any]] = firebase_manager.get_vrchat_worlds(limit=limit)  # type: ignore
+        
+        # 統計情報の取得を無効化（緊急: 追加読み取りを防止）
+        # stats = None
+        # try:
+        #     if limit > 100:  # 大量データ取得時のみ統計も取得
+        #         stats = firebase_manager.get_stats()
+        # except Exception as e:
+        #     logger.warning(f"統計取得失敗: {e}")
+        
+        response_data: Dict[str, Any] = {  # type: ignore
             'success': True,
             'worlds': data,
-            'count': len(data),
-            'reads_used': len(data)  # 実際の読み取り数を表示
-        })
+            'count': len(data),  # type: ignore
+            'reads_used': len(data),  # 実際の読み取り数を表示  # type: ignore
+            'limit_applied': limit  # 適用された制限を表示
+        }
+        
+        # 緊急: 統計情報の取得を無効化
+        # if stats:
+        #     response_data['stats'] = stats
+            
+        return jsonify(response_data)
     except Exception as e:
         logger.error(f"VRChatワールドデータ取得エラー: {e}")
         return jsonify({
@@ -113,7 +130,7 @@ def get_vrchat_worlds():
 def get_stats():
     """統計情報のAPI"""
     try:
-        stats = firebase_manager.get_stats()
+        stats: Dict[str, Any] = firebase_manager.get_stats()  # type: ignore
         return jsonify({
             'success': True,
             'stats': stats
@@ -126,10 +143,10 @@ def get_stats():
         }), 500
 
 @app.route('/api/vrchat_world/<world_id>')
-def get_vrchat_world(world_id):
+def get_vrchat_world(world_id: str):
     """VRChatワールド詳細取得"""
     try:
-        world_data = firebase_manager.get_vrchat_world_by_id(world_id)
+        world_data = firebase_manager.get_vrchat_world_by_id(world_id)  # type: ignore
         if world_data:
             return jsonify({
                 'success': True,
@@ -148,7 +165,7 @@ def get_vrchat_world(world_id):
         }), 500
 
 @app.route('/api/vrchat_world/<world_id>', methods=['PUT'])
-def update_vrchat_world(world_id):
+def update_vrchat_world(world_id: str):
     """VRChatワールド更新"""
     try:
         data = request.get_json()
@@ -161,7 +178,7 @@ def update_vrchat_world(world_id):
         # idフィールドは更新対象から除外
         update_data = {k: v for k, v in data.items() if k != 'id'}
         
-        success = firebase_manager.update_vrchat_world(world_id, update_data)
+        success = firebase_manager.update_vrchat_world(world_id, update_data)  # type: ignore
         if success:
             return jsonify({
                 'success': True,
@@ -180,10 +197,10 @@ def update_vrchat_world(world_id):
         }), 500
 
 @app.route('/api/vrchat_world/<world_id>', methods=['DELETE'])
-def delete_vrchat_world(world_id):
+def delete_vrchat_world(world_id: str):
     """VRChatワールド削除"""
     try:
-        success = firebase_manager.delete_vrchat_world(world_id)
+        success = firebase_manager.delete_vrchat_world(world_id)  # type: ignore
         if success:
             return jsonify({
                 'success': True,

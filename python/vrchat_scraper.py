@@ -10,7 +10,6 @@ import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 from urllib.parse import urljoin, urlparse
-import requests
 from bs4 import BeautifulSoup
 import re
 
@@ -244,7 +243,7 @@ class VRChatWorldScraper:
         """
         ワールドデータを処理してFirebase用の形式に変換
         """
-        processed_data = {
+        processed_data: Dict[str, Any] = {
             'id': world_data.get('id', ''),
             'name': world_data.get('name', ''),
             'description': world_data.get('description', ''),
@@ -449,7 +448,7 @@ class VRChatWorldScraper:
         HTMLからワールド情報を抽出
         """
         try:
-            world_info = {
+            world_info: Dict[str, Any] = {
                 'world_id': world_id,
                 'title': '',
                 'creator': '',
@@ -472,8 +471,9 @@ class VRChatWorldScraper:
             
             # サムネイル画像URLを抽出
             thumbnail_element = soup.find('img', class_='world-image') or soup.find('img', {'alt': re.compile(r'world|thumbnail', re.I)})
-            if thumbnail_element:
-                world_info['thumbnail_url'] = thumbnail_element.get('src', '')
+            if thumbnail_element and hasattr(thumbnail_element, 'get'):
+                thumbnail_src = thumbnail_element.get('src')  # type: ignore
+                world_info['thumbnail_url'] = str(thumbnail_src) if thumbnail_src else ''  # type: ignore
             
             # Descriptionを抽出
             description_element = soup.find('div', class_='description') or soup.find('p', class_='world-description')
@@ -483,58 +483,68 @@ class VRChatWorldScraper:
             # メタデータから情報を抽出
             meta_elements = soup.find_all('meta')
             for meta in meta_elements:
-                property_name = meta.get('property', '').lower()
-                name = meta.get('name', '').lower()
-                content = meta.get('content', '')
-                
-                if 'title' in property_name or 'title' in name:
-                    if not world_info['title']:
-                        world_info['title'] = content
-                elif 'description' in property_name or 'description' in name:
-                    if not world_info['description']:
-                        world_info['description'] = content
-                elif 'image' in property_name or 'image' in name:
-                    if not world_info['thumbnail_url']:
-                        world_info['thumbnail_url'] = content
+                try:
+                    property_attr = meta.attrs.get('property', '') if hasattr(meta, 'attrs') else ''  # type: ignore
+                    name_attr = meta.attrs.get('name', '') if hasattr(meta, 'attrs') else ''  # type: ignore
+                    content_attr = meta.attrs.get('content', '') if hasattr(meta, 'attrs') else ''  # type: ignore
+                    
+                    property_name = str(property_attr).lower() if property_attr else ''  # type: ignore
+                    name = str(name_attr).lower() if name_attr else ''  # type: ignore
+                    content = str(content_attr) if content_attr else ''  # type: ignore
+                    
+                    if 'title' in property_name or 'title' in name:
+                        if not world_info['title']:
+                            world_info['title'] = content
+                    elif 'description' in property_name or 'description' in name:
+                        if not world_info['description']:
+                            world_info['description'] = content
+                    elif 'image' in property_name or 'image' in name:
+                        if not world_info['thumbnail_url']:
+                            world_info['thumbnail_url'] = content
+                except (AttributeError, TypeError):
+                    continue
             
             # JSON-LDスクリプトから情報を抽出
             json_ld_scripts = soup.find_all('script', type='application/ld+json')
             for script in json_ld_scripts:
                 try:
-                    data = json.loads(script.string)
-                    if isinstance(data, dict):
-                        if 'name' in data and not world_info['title']:
-                            world_info['title'] = data['name']
-                        if 'description' in data and not world_info['description']:
-                            world_info['description'] = data['description']
-                        if 'image' in data and not world_info['thumbnail_url']:
-                            world_info['thumbnail_url'] = data['image']
-                        if 'author' in data and not world_info['creator']:
-                            author = data['author']
-                            if isinstance(author, dict):
-                                world_info['creator'] = author.get('name', '')
-                            else:
-                                world_info['creator'] = str(author)
-                except json.JSONDecodeError:
+                    script_text = script.string if hasattr(script, 'string') and script.string else ''  # type: ignore
+                    if script_text:
+                        data = json.loads(str(script_text))  # type: ignore
+                        if isinstance(data, dict):
+                            if 'name' in data and not world_info['title']:
+                                world_info['title'] = str(data['name'])  # type: ignore
+                            if 'description' in data and not world_info['description']:
+                                world_info['description'] = str(data['description'])  # type: ignore
+                            if 'image' in data and not world_info['thumbnail_url']:
+                                world_info['thumbnail_url'] = str(data['image'])  # type: ignore
+                            if 'author' in data and not world_info['creator']:
+                                author = data['author']  # type: ignore
+                                if isinstance(author, dict):
+                                    world_info['creator'] = str(author.get('name', ''))  # type: ignore
+                                else:
+                                    world_info['creator'] = str(author)  # type: ignore
+                except (json.JSONDecodeError, AttributeError, TypeError):
                     continue
             
             # React Props或いはNext.jsのデータから情報を抽出
             script_elements = soup.find_all('script')
             for script in script_elements:
-                if script.string and 'world' in script.string.lower():
-                    try:
+                try:
+                    script_text = script.string if hasattr(script, 'string') and script.string else ''  # type: ignore
+                    if script_text and 'world' in str(script_text).lower():  # type: ignore
                         # __NEXT_DATA__やReact propsを探す
-                        script_text = script.string
-                        if '__NEXT_DATA__' in script_text:
+                        if '__NEXT_DATA__' in str(script_text):  # type: ignore
                             # Next.jsのデータを解析
-                            start = script_text.find('{')
-                            end = script_text.rfind('}') + 1
+                            script_str = str(script_text)  # type: ignore
+                            start = script_str.find('{')  # type: ignore
+                            end = script_str.rfind('}') + 1  # type: ignore
                             if start != -1 and end != -1:
-                                data = json.loads(script_text[start:end])
+                                data = json.loads(script_str[start:end])  # type: ignore
                                 # プロパティを再帰的に探索
-                                self._extract_from_json_data(data, world_info)
-                    except:
-                        continue
+                                self._extract_from_json_data(data, world_info)  # type: ignore
+                except (json.JSONDecodeError, AttributeError, TypeError):
+                    continue
             
             # Capacityとpublishedの情報を検索
             text_content = soup.get_text()
@@ -562,33 +572,33 @@ class VRChatWorldScraper:
             logger.error(f"ワールド情報抽出例外: {e}")
             return None
     
-    def _extract_from_json_data(self, data, world_info):
+    def _extract_from_json_data(self, data: Any, world_info: Dict[str, Any]) -> None:  # type: ignore
         """
         JSONデータから再帰的にワールド情報を抽出
         """
         if isinstance(data, dict):
-            for key, value in data.items():
-                key_lower = key.lower()
+            for key, value in data.items():  # type: ignore
+                key_lower = str(key).lower()  # type: ignore
                 if key_lower == 'name' and not world_info['title']:
-                    world_info['title'] = str(value)
+                    world_info['title'] = str(value)  # type: ignore
                 elif key_lower == 'description' and not world_info['description']:
-                    world_info['description'] = str(value)
+                    world_info['description'] = str(value)  # type: ignore
                 elif key_lower in ['imageurl', 'thumbnailurl', 'image'] and not world_info['thumbnail_url']:
-                    world_info['thumbnail_url'] = str(value)
+                    world_info['thumbnail_url'] = str(value)  # type: ignore
                 elif key_lower in ['author', 'creator'] and not world_info['creator']:
                     if isinstance(value, dict):
-                        world_info['creator'] = value.get('name', str(value))
+                        world_info['creator'] = str(value.get('name', value))  # type: ignore
                     else:
-                        world_info['creator'] = str(value)
+                        world_info['creator'] = str(value)  # type: ignore
                 elif key_lower == 'capacity' and not world_info['capacity']:
-                    world_info['capacity'] = str(value)
+                    world_info['capacity'] = str(value)  # type: ignore
                 elif key_lower in ['published', 'createdat', 'publicatedat'] and not world_info['published']:
-                    world_info['published'] = str(value)
+                    world_info['published'] = str(value)  # type: ignore
                 elif isinstance(value, (dict, list)):
-                    self._extract_from_json_data(value, world_info)
+                    self._extract_from_json_data(value, world_info)  # type: ignore
         elif isinstance(data, list):
-            for item in data:
-                self._extract_from_json_data(item, world_info)
+            for item in data:  # type: ignore
+                self._extract_from_json_data(item, world_info)  # type: ignore
 
     def scrape_world_by_url(self, url: str) -> Optional[Dict[str, Any]]:
         """
@@ -628,7 +638,7 @@ class VRChatWorldScraper:
         # APIでの取得に失敗した場合は、Webページスクレイピングを試行
         return self.scrape_world_page(world_id)
 
-    def scrape_worlds_from_file(self, file_path: str) -> List[Dict]:
+    def scrape_worlds_from_file(self, file_path: str) -> List[Dict[str, Any]]:
         """
         ファイルからワールドURLリストを読み込んでバッチ処理
         """

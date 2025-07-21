@@ -200,8 +200,9 @@
         .world-stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
+            gap: 0.3rem;
             margin-bottom: 1rem;
+            font-size: 0.85rem;
         }
 
         .stat-item {
@@ -437,6 +438,9 @@
         <header>
             <div class="logo">🌐 NazoWeb</div>
             <div class="subtitle">VRChatワールド管理システム</div>
+            <div style="margin-top: 1rem; padding: 10px; background: rgba(255, 193, 7, 0.2); border-radius: 10px; color: #856404; font-size: 0.9rem;">
+                ⚠️ Firebase読み取り制限により、表示件数を制限しています（最大30件）
+            </div>
             <div style="margin-top: 1rem;">
                 <a href="/dashboard.html" style="
                     display: inline-block;
@@ -464,6 +468,14 @@
                 <div class="stat-number" id="todayUpdated">-</div>
                 <div class="stat-label">今日更新</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalVisits">-</div>
+                <div class="stat-label">総訪問者数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgPopularity">-</div>
+                <div class="stat-label">平均人気度</div>
+            </div>
         </div>
 
         <!-- コントロール -->
@@ -480,6 +492,9 @@
                     <option value="created_at">作成日順</option>
                     <option value="updated_at">更新日順</option>
                     <option value="name">名前順</option>
+                    <option value="popularity">人気度順</option>
+                    <option value="visits">訪問者数順</option>
+                    <option value="favorites">お気に入り順</option>
                 </select>
             </div>
         </div>
@@ -513,10 +528,10 @@
             <div class="page-size-selector">
                 <label style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">件数:</label>
                 <select id="pageSizeSelect" onchange="changePageSize()">
-                    <option value="20">20件</option>
-                    <option value="30" selected>30件</option>
+                    <option value="10">10件</option>
+                    <option value="20" selected>20件</option>
+                    <option value="30">30件</option>
                     <option value="50">50件</option>
-                    <option value="100">100件</option>
                 </select>
             </div>
         </div>
@@ -536,7 +551,7 @@
         
         // ページング関連の変数
         let currentPage = 1;
-        let pageSize = 30;
+        let pageSize = 20;  // 緊急: ページサイズを20に削減
         let totalPages = 1;
 
         // ダミーデータ（Firebase接続前のテスト用）
@@ -594,8 +609,8 @@
             errorMessage.style.display = 'none';
 
             try {
-                // Firebase APIからデータを取得
-                const response = await fetch('/api/vrchat_worlds');
+                // Firebase APIからデータを取得（緊急: 制限を30件に戻す）
+                const response = await fetch('/api/vrchat_worlds?limit=30');
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -623,7 +638,13 @@
                 
                 filteredWorlds = [...allWorlds];
                 displayWorlds();
-                updateStats();
+                
+                // サーバーから統計情報が含まれている場合はそれを使用
+                if (data.stats) {
+                    updateStatsFromData(data.stats);
+                } else {
+                    await updateStats(); // 統計の更新を非同期にして統計APIを使用
+                }
                 
             } catch (error) {
                 console.error('データ読み込みエラー:', error);
@@ -633,10 +654,41 @@
                 allWorlds = [];
                 filteredWorlds = [];
                 displayWorlds();
-                updateStats();
+                await updateStats();
             } finally {
                 loading.style.display = 'none';
             }
+        }
+
+        // サーバーから取得した統計データを使用して表示を更新
+        function updateStatsFromData(stats) {
+            // サーバーから取得した統計情報を使用
+            document.getElementById('totalWorlds').textContent = formatNumber(stats.total_worlds || 0);
+            
+            // 今日更新された件数は現在のデータから計算
+            const today = new Date().toDateString();
+            const todayUpdated = allWorlds.filter(world => {
+                try {
+                    return new Date(world.scraped_at).toDateString() === today;
+                } catch {
+                    return false;
+                }
+            }).length;
+            
+            document.getElementById('todayUpdated').textContent = formatNumber(todayUpdated);
+            
+            // ローカルデータから追加統計を計算
+            updateLocalStats();
+        }
+
+        // ローカルデータから統計を計算
+        function updateLocalStats() {
+            const totalVisits = allWorlds.reduce((sum, world) => sum + (world.visits || 0), 0);
+            const avgPopularity = allWorlds.length > 0 ? 
+                allWorlds.reduce((sum, world) => sum + (world.popularity || 0), 0) / allWorlds.length : 0;
+            
+            document.getElementById('totalVisits').textContent = formatNumber(totalVisits);
+            document.getElementById('avgPopularity').textContent = formatNumber(avgPopularity);
         }
 
         // 最新ワールドを読み込み
@@ -712,11 +764,40 @@
                                 <span class="stat-icon">🏠</span>
                                 <span>定員 ${formatNumber(world.capacity || 0)}人</span>
                             </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">👥</span>
+                                <span>推奨 ${formatNumber(world.recommendedCapacity || 0)}人</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">👁️</span>
+                                <span>訪問 ${formatNumber(world.visits || 0)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">❤️</span>
+                                <span>お気に入り ${formatNumber(world.favorites || 0)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">🔥</span>
+                                <span>人気度 ${formatNumber(world.popularity || 0)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">📱</span>
+                                <span>${world.platform || 'Unknown'}</span>
+                            </div>
                         </div>
                         
                         ${world.tags && world.tags.length > 0 ? `
                             <div class="world-tags">
                                 ${world.tags.slice(0, 4).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        ${world.releaseStatus ? `
+                            <div style="margin-bottom: 1rem;">
+                                <span style="background: ${getStatusColor(world.releaseStatus)}; color: white; padding: 0.25rem 0.5rem; border-radius: 10px; font-size: 0.75rem;">
+                                    ${getStatusText(world.releaseStatus)}
+                                </span>
+                                ${world.version ? `<span style="color: #666; font-size: 0.8rem; margin-left: 0.5rem;">v${world.version}</span>` : ''}
                             </div>
                         ` : ''}
                         
@@ -738,7 +819,36 @@
         }
 
         // 統計更新
-        function updateStats() {
+        async function updateStats() {
+            try {
+                // 統計APIから正確な統計情報を取得
+                const response = await fetch('/api/stats');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.stats) {
+                        // サーバーから取得した統計情報を使用
+                        document.getElementById('totalWorlds').textContent = formatNumber(data.stats.total_worlds || 0);
+                        
+                        // 今日更新された件数は現在のデータから計算
+                        const today = new Date().toDateString();
+                        const todayUpdated = allWorlds.filter(world => {
+                            try {
+                                return new Date(world.scraped_at).toDateString() === today;
+                            } catch {
+                                return false;
+                            }
+                        }).length;
+                        
+                        document.getElementById('todayUpdated').textContent = formatNumber(todayUpdated);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('統計API取得エラー:', error);
+            }
+            
+            // フォールバック: ローカルデータから統計を計算
             const totalWorlds = allWorlds.length;
             
             const today = new Date().toDateString();
@@ -752,6 +862,9 @@
 
             document.getElementById('totalWorlds').textContent = formatNumber(totalWorlds);
             document.getElementById('todayUpdated').textContent = formatNumber(todayUpdated);
+            
+            // 追加統計も更新
+            updateLocalStats();
         }
 
         // 検索フィルター
@@ -766,7 +879,9 @@
                     (world.name && world.name.toLowerCase().includes(searchTerm)) ||
                     (world.authorName && world.authorName.toLowerCase().includes(searchTerm)) ||
                     (world.description && world.description.toLowerCase().includes(searchTerm)) ||
-                    (world.tags && world.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+                    (world.tags && world.tags.some(tag => tag.toLowerCase().includes(searchTerm))) ||
+                    (world.releaseStatus && world.releaseStatus.toLowerCase().includes(searchTerm)) ||
+                    (world.platform && world.platform.toLowerCase().includes(searchTerm))
                 );
             }
             
@@ -788,6 +903,12 @@
                         return new Date(b.scraped_at || 0) - new Date(a.scraped_at || 0);
                     case 'name':
                         return (a.title || a.name || '').localeCompare(b.title || b.name || '');
+                    case 'popularity':
+                        return (b.popularity || 0) - (a.popularity || 0);
+                    case 'visits':
+                        return (b.visits || 0) - (a.visits || 0);
+                    case 'favorites':
+                        return (b.favorites || 0) - (a.favorites || 0);
                     default:
                         return 0;
                 }
@@ -804,13 +925,19 @@
             }
 
             const csv = [
-                ['ワールド名', '作者', '説明', '定員', 'タグ', '作成日', '更新日'],
+                ['ワールド名', '作者', '説明', '定員', '推奨定員', '訪問者数', '人気度', 'お気に入り', 'タグ', 'リリース状態', 'プラットフォーム', '作成日', '更新日'],
                 ...filteredWorlds.map(world => [
                     world.title || world.name || '',
                     world.authorName || '',
                     world.description || '',
                     world.capacity || 0,
+                    world.recommendedCapacity || 0,
+                    world.visits || 0,
+                    world.popularity || 0,
+                    world.favorites || 0,
                     (world.tags || []).join(';'),
+                    world.releaseStatus || '',
+                    world.platform || '',
                     formatDate(world.created_at || world.publicationDate),
                     formatDate(world.updated_at)
                 ])
@@ -889,6 +1016,28 @@
                 return (numValue / 1000).toFixed(1) + 'K';
             }
             return numValue.toString();
+        }
+
+        // リリース状態の色を取得
+        function getStatusColor(status) {
+            switch (status?.toLowerCase()) {
+                case 'public': return '#28a745';
+                case 'community': return '#17a2b8';
+                case 'friends': return '#ffc107';
+                case 'private': return '#dc3545';
+                default: return '#6c757d';
+            }
+        }
+
+        // リリース状態のテキストを取得
+        function getStatusText(status) {
+            switch (status?.toLowerCase()) {
+                case 'public': return 'パブリック';
+                case 'community': return 'コミュニティ';
+                case 'friends': return 'フレンド限定';
+                case 'private': return 'プライベート';
+                default: return status || '不明';
+            }
         }
 
         // 初期データ読み込み
