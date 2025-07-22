@@ -16,6 +16,7 @@ python-dotenv>=1.0.0
 schedule>=1.2.0
 tqdm>=4.66.0
 
-# Web Server (optional for local testing)
+# Web Server
 flask>=2.3.0
+flask-cors>=4.0.0
 flask-cors>=4.0.0

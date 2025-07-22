@@ -591,7 +591,11 @@
             errorMessage.style.display = 'none';
             
             try {
-                const response = await fetch('/api/vrchat_worlds/all');
+                // APIのベースURLを動的に設定（Vercel対応）
+                const baseUrl = window.location.origin;
+                const apiUrl = `${baseUrl}/api/vrchat_worlds/all`;
+                
+                const response = await fetch(apiUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

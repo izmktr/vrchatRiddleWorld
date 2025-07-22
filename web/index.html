@@ -555,43 +555,6 @@
         let pageSize = 20;  // 緊急: ページサイズを20に削減
         let totalPages = 1;
 
-        // ダミーデータ（Firebase接続前のテスト用）
-        const dummyWorlds = [
-            {
-                id: 'wrld_test1',
-                name: 'Beautiful Sunset World',
-                authorName: 'WorldCreator123',
-                description: '美しい夕焼けが楽しめるリラックスできるワールドです。友達と一緒に素晴らしい景色を楽しみましょう。',
-                capacity: 16,
-                tags: ['sunset', 'relaxing', 'scenic', 'social'],
-                imageUrl: '',
-                publicationDate: '2024-01-15T10:00:00Z',
-                scraped_at: new Date().toISOString()
-            },
-            {
-                id: 'wrld_test2',
-                name: 'Cyberpunk City',
-                authorName: 'FutureBuilder',
-                description: 'ネオンライトが輝くサイバーパンクな未来都市を探索できるワールド。',
-                capacity: 20,
-                tags: ['cyberpunk', 'city', 'exploration', 'neon'],
-                imageUrl: '',
-                publicationDate: '2024-02-01T14:30:00Z',
-                scraped_at: new Date(Date.now() - 86400000).toISOString()
-            },
-            {
-                id: 'wrld_test3',
-                name: 'Cozy Coffee Shop',
-                authorName: 'CafeOwner',
-                description: '温かい雰囲気のコーヒーショップ。友達とのんびりおしゃべりを楽しめます。',
-                capacity: 12,
-                tags: ['cozy', 'coffee', 'social', 'indoor'],
-                imageUrl: '',
-                publicationDate: '2024-01-28T09:15:00Z',
-                scraped_at: new Date(Date.now() - 172800000).toISOString()
-            }
-        ];
-
         // デバウンス用の変数
         let filterTimeout = null;
 
@@ -610,8 +573,12 @@
             errorMessage.style.display = 'none';
 
             try {
-                // Firebase APIからデータを取得（制限を100件に増加）
-                const response = await fetch('/api/vrchat_worlds?limit=100');
+                // APIのベースURLを動的に設定（Vercel対応）
+                const baseUrl = window.location.origin;
+                const apiUrl = `${baseUrl}/api/vrchat_worlds`;
+                
+                // Firebase APIからデータを取得
+                const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -822,8 +789,12 @@
         // 統計更新
         async function updateStats() {
             try {
+                // APIのベースURLを動的に設定（Vercel対応）
+                const baseUrl = window.location.origin;
+                const statsUrl = `${baseUrl}/api/stats`;
+                
                 // 統計APIから正確な統計情報を取得
-                const response = await fetch('/api/stats');
+                const response = await fetch(statsUrl);
                 
                 if (response.ok) {
                     const data = await response.json();
