@@ -32,6 +32,21 @@ def index():
     except FileNotFoundError:
         return "<h1>index.htmlが見つかりません</h1>", 404
 
+@app.route('/manage-worlds.html')
+def manage_worlds():
+    """管理ページ"""
+    try:
+        with open(os.path.join(project_root, 'web', 'manage-worlds.html'), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>manage-worlds.htmlが見つかりません</h1>", 404
+
+# 静的ファイル配信（TypeScriptコンパイル済み）
+@app.route('/src/<path:filename>')
+def serve_src(filename):
+    """srcフォルダの静的ファイル配信"""
+    return send_from_directory(os.path.join(project_root, 'web', 'src'), filename)
+
 @app.route('/vrchat_worlds.html')
 def vrchat_worlds():
     """VRChatワールド表示ページ（互換性のため）"""

@@ -4,6 +4,10 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "web/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -16,8 +20,16 @@
       "dest": "/api/thumbnail.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
       "dest": "/web/$1"
+    },
+    {
+      "src": "/manage-worlds.html",
+      "dest": "/web/manage-worlds.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/web/index.html"
     }
   ],
   "env": {

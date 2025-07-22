@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NazoWeb - ワールド管理</title>
+    <link rel="stylesheet" href="./src/styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <div class="logo">🌐 NazoWeb</div>
+                <div class="subtitle">ワールド管理システム</div>
+                <nav class="nav-buttons">
+                    <a href="index.html" class="nav-btn">メイン</a>
+                    <a href="manage-worlds.html" class="nav-btn active">管理画面</a>
+                </nav>
+            </header>
+
+            <main>
+                <!-- 統計情報 -->
+                <section class="stats" id="manage-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="manage-total-worlds">-</div>
+                        <div class="stat-label">総ワールド数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="selected-count">0</div>
+                        <div class="stat-label">選択中</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="filtered-count">-</div>
+                        <div class="stat-label">表示中</div>
+                    </div>
+                </section>
+
+                <!-- 管理操作パネル -->
+                <section class="management-panel">
+                    <div class="panel-header">
+                        <h2>📋 管理操作</h2>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="select-all-btn" class="action-btn">すべて選択</button>
+                        <button id="deselect-all-btn" class="action-btn">選択解除</button>
+                        <button id="export-selected-btn" class="action-btn primary">選択をエクスポート</button>
+                        <button id="export-all-btn" class="action-btn">全データエクスポート</button>
+                    </div>
+                </section>
+
+                <!-- 検索とフィルター -->
+                <section class="search-section">
+                    <div class="search-container">
+                        <input type="text" id="manage-search-input" placeholder="ワールド名、作者名、説明で検索...">
+                        <button id="manage-search-btn" class="search-btn">🔍</button>
+                    </div>
+                    <div class="filters">
+                        <select id="manage-sort-select">
+                            <option value="updated_at_desc">更新日（新しい順）</option>
+                            <option value="updated_at_asc">更新日（古い順）</option>
+                            <option value="name_asc">名前（A-Z）</option>
+                            <option value="name_desc">名前（Z-A）</option>
+                            <option value="visits_desc">訪問数（多い順）</option>
+                            <option value="visits_asc">訪問数（少ない順）</option>
+                        </select>
+                        <select id="manage-release-status-filter">
+                            <option value="all">すべて</option>
+                            <option value="public">公開</option>
+                            <option value="private">非公開</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- 管理用ワールド一覧 -->
+                <section class="worlds-section">
+                    <div class="worlds-table-container">
+                        <table class="worlds-table" id="worlds-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="header-checkbox"></th>
+                                    <th>サムネイル</th>
+                                    <th>ワールド名</th>
+                                    <th>作者</th>
+                                    <th>公開状態</th>
+                                    <th>訪問数</th>
+                                    <th>更新日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="worlds-table-body">
+                                <!-- テーブル行がJavaScriptで動的に挿入されます -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- ローディング -->
+                    <div class="loading" id="manage-loading">
+                        <div class="spinner"></div>
+                        <p>ワールドデータを読み込み中...</p>
+                    </div>
+
+                    <!-- エラーメッセージ -->
+                    <div class="error-message" id="manage-error-message" style="display: none;">
+                        <p>データの読み込みに失敗しました。しばらく後にもう一度お試しください。</p>
+                    </div>
+
+                    <!-- ページネーション -->
+                    <div class="pagination" id="manage-pagination" style="display: none;">
+                        <button id="manage-prev-btn" class="page-btn" disabled>← 前へ</button>
+                        <span id="manage-page-info">1 / 1</span>
+                        <button id="manage-next-btn" class="page-btn" disabled>次へ →</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- モーダル -->
+    <div id="export-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>エクスポート設定</h2>
+            <div class="export-options">
+                <label>
+                    <input type="radio" name="export-format" value="csv" checked>
+                    CSV形式
+                </label>
+                <label>
+                    <input type="radio" name="export-format" value="json">
+                    JSON形式
+                </label>
+            </div>
+            <div class="export-fields">
+                <h3>エクスポートする項目：</h3>
+                <label><input type="checkbox" name="export-field" value="id" checked> ID</label>
+                <label><input type="checkbox" name="export-field" value="name" checked> ワールド名</label>
+                <label><input type="checkbox" name="export-field" value="author" checked> 作者</label>
+                <label><input type="checkbox" name="export-field" value="description" checked> 説明</label>
+                <label><input type="checkbox" name="export-field" value="visits" checked> 訪問数</label>
+                <label><input type="checkbox" name="export-field" value="releaseStatus" checked> 公開状態</label>
+                <label><input type="checkbox" name="export-field" value="updated_at" checked> 更新日</label>
+                <label><input type="checkbox" name="export-field" value="tags" checked> タグ</label>
+            </div>
+            <div class="modal-actions">
+                <button id="confirm-export-btn" class="action-btn primary">エクスポート実行</button>
+                <button id="cancel-export-btn" class="action-btn">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./src/manage.ts"></script>
+</body>
+</html>

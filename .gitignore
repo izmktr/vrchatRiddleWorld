@@ -1,3 +1,6 @@
+# ========================================
+# Python
+# ========================================
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -26,8 +29,6 @@ wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -47,6 +48,220 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ========================================
+# Node.js / TypeScript / Frontend
+# ========================================
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+web/dist/
+web/build/
+*.tsbuildinfo
+
+# Cache
+.npm
+.eslintcache
+.parcel-cache
+
+# ========================================
+# Environment Variables & Credentials
+# ========================================
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Firebase credentials (CRITICAL - NEVER COMMIT)
+config/firebase-service-account.json
+firebase-service-account.json
+**/firebase-service-account*.json
+
+# VRChat session files
+config/vrchat_session.json
+vrchat_session.json
+**/vrchat_session*.json
+
+# API keys and secrets
+.secrets
+secrets.json
+*.key
+*.pem
+
+# ========================================
+# Logs & Temporary Files
+# ========================================
+# Log files
+logs/
+*.log
+batch_scraper.log
+scraper.log
+app.log
+
+# Temporary files
+.tmp/
+temp/
+*.tmp
+*.temp
+
+# ========================================
+# Data & Exports
+# ========================================
+# CSV exports
+exports/*.csv
+*.csv
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Thumbnail images (too many files)
+thumbnail/*.jpg
+thumbnail/*.jpeg
+thumbnail/*.png
+thumbnail/*.gif
+thumbnail/*.webp
+
+# But keep a few sample thumbnails for testing
+!thumbnail/sample*.jpg
+!thumbnail/sample*.png
+
+# ========================================
+# IDE & Editor Files
+# ========================================
+# VSCode
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/*.code-workspace
+
+# Keep shared VSCode config
+!.vscode/extensions.json
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ========================================
+# OS Generated Files
+# ========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ========================================
+# Backup Files
+# ========================================
+*.bak
+*.backup
+*.old
+*_backup
+*_old
+
+# ========================================
+# Runtime & Server Files
+# ========================================
+# PID files
+*.pid
+
+# Server runtime
+.vercel
+.netlify
+
+# ========================================
+# Project Specific
+# ========================================
+# VRChat world data files (too large)
+vrcworld.txt
+world_data.txt
+
+# Test data
+test_data/
+mock_data/
+
+# Development server cache
+.cache/
+.dev-cache/
 
 # Translations
 *.mo

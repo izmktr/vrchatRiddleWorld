@@ -33,6 +33,23 @@ git push origin main
 1. Vercelダッシュボードで "New Project" をクリック
 2. GitHubリポジトリを選択
 3. プロジェクト名を設定（例：nazoweb）
+4. **Framework Preset**: "Other" を選択（カスタム構成のため）
+5. **Build and Output Settings**: そのまま（変更不要）
+6. **Root Directory**: そのまま（変更不要）
+
+#### ⚠️ 重要な設定ポイント
+- **Framework Settings**: **空のまま**（何も入力しない）
+- **Build Command**: 自動入力されても**削除して空にする**
+- **Output Directory**: 自動入力されても**削除して空にする**
+- **Install Command**: 自動入力されても**削除して空にする**
+
+理由：プロジェクトは`vercel.json`でカスタム設定を使用するため、フレームワークの自動設定は不要です。
+
+**デプロイ対象フォルダ**: `web/`フォルダがTypeScriptで新しく作成されました。以下の構成になっています：
+
+- **Frontend**: TypeScript + Vite + 現代的なESモジュール
+- **Build**: `web/dist/`に出力される静的ファイル
+- **Development**: `web/`フォルダで`npm run dev`で開発サーバー起動可能
 
 ### 3. 環境変数の設定
 
