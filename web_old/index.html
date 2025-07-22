@@ -439,8 +439,8 @@
         <header>
             <div class="logo">🌐 NazoWeb</div>
             <div class="subtitle">VRChatワールド管理システム</div>
-            <div style="margin-top: 1rem; padding: 10px; background: rgba(255, 193, 7, 0.2); border-radius: 10px; color: #856404; font-size: 0.9rem;">
-                ⚠️ Firebase読み取り制限により、表示件数を制限しています（最大30件）
+            <div style="margin-top: 1rem; padding: 10px; background: rgba(52, 152, 219, 0.2); border-radius: 10px; color: #2c3e50; font-size: 0.9rem;">
+                ℹ️ 本番環境ではVRChat公式画像を使用しています
             </div>
             <div style="margin-top: 1rem;">
                 <a href="/dashboard.html" style="
@@ -695,21 +695,24 @@
             worldGrid.style.opacity = '0.3';
             
             worldGrid.innerHTML = currentPageWorlds.map(world => {
-                // 画像URLを安全に決定
+                // 画像URLを安全に決定（Vercel対応: 外部URLを優先）
                 let imageUrl = 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World';
                 
-                if (world.thumbnail_path) {
-                    // ローカルサムネイルパスがある場合
+                // 優先順位: 1. VRChat公式URL → 2. ローカルサムネイル（開発環境のみ）
+                if (world.thumbnailImageUrl) {
+                    // VRChat公式サムネイルURL（256px版）
+                    imageUrl = world.thumbnailImageUrl;
+                } else if (world.imageUrl) {
+                    // VRChatの元画像URL
+                    imageUrl = world.imageUrl;
+                } else if (world.thumbnail_url && world.thumbnail_url.startsWith('http')) {
+                    // 外部URL
+                    imageUrl = world.thumbnail_url;
+                } else if (world.thumbnail_path && window.location.hostname === 'localhost') {
+                    // ローカル開発環境でのみローカルサムネイルを使用
                     const filename = world.thumbnail_path.includes('\\') ? 
                         world.thumbnail_path.split('\\').pop() : world.thumbnail_path.split('/').pop();
                     imageUrl = `/thumbnail/${filename}`;
-                } else if (world.thumbnail_url) {
-                    // ローカルサムネイルURLがある場合
-                    const filename = world.thumbnail_url.includes('/') ? 
-                        world.thumbnail_url.split('/').pop() : world.thumbnail_url;
-                    imageUrl = `/thumbnail/${filename}`;
-                } else if (world.image_url) {
-                    imageUrl = world.image_url;
                 }
                 
                 return `

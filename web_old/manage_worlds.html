@@ -709,21 +709,24 @@
             worldGrid.style.opacity = '0';
             
             worldGrid.innerHTML = currentWorlds.map(world => {
-                // 画像URLを安全に決定
+                // 画像URLを安全に決定（Vercel対応: 外部URLを優先）
                 let thumbnailUrl = 'https://via.placeholder.com/350x200/667eea/ffffff?text=VRChat+World';
                 
-                if (world.thumbnail_path) {
-                    // ローカルサムネイルパスがある場合
+                // 優先順位: 1. VRChat公式URL → 2. ローカルサムネイル（開発環境のみ）
+                if (world.thumbnailImageUrl) {
+                    // VRChat公式サムネイルURL（256px版）
+                    thumbnailUrl = world.thumbnailImageUrl;
+                } else if (world.imageUrl) {
+                    // VRChatの元画像URL
+                    thumbnailUrl = world.imageUrl;
+                } else if (world.thumbnail_url && world.thumbnail_url.startsWith('http')) {
+                    // 外部URL
+                    thumbnailUrl = world.thumbnail_url;
+                } else if (world.thumbnail_path && window.location.hostname === 'localhost') {
+                    // ローカル開発環境でのみローカルサムネイルを使用
                     const filename = world.thumbnail_path.includes('\\') ? 
                         world.thumbnail_path.split('\\').pop() : world.thumbnail_path.split('/').pop();
                     thumbnailUrl = `/thumbnail/${filename}`;
-                } else if (world.thumbnail_url) {
-                    // ローカルサムネイルURLがある場合
-                    const filename = world.thumbnail_url.includes('/') ? 
-                        world.thumbnail_url.split('/').pop() : world.thumbnail_url;
-                    thumbnailUrl = `/thumbnail/${filename}`;
-                } else if (world.image_url) {
-                    thumbnailUrl = world.image_url;
                 }
                 
                 return `
