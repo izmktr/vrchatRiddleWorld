@@ -10,7 +10,6 @@ vrcworld.txtにあるワールドURLからデータをダウンロードし、
 import os
 import sys
 import time
-from datetime import datetime
 
 
 # ライブラリパスを絶対パスで追加
@@ -63,7 +62,7 @@ def main():
             # サムネイルダウンロード（既存ファイルはスキップ）
             thumbnail_result = scraper.download_thumbnail(world_data, 'thumbnail')
             if thumbnail_result:
-                status, _path = thumbnail_result
+                status, _ = thumbnail_result
                 if status == 'downloaded':
                     print(f"✅ サムネイル: {world_id}.jpg（ダウンロード完了）")
                 elif status == 'skipped':
