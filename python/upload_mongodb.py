@@ -9,11 +9,13 @@ raw_dataフォルダにある生データをMongoDB Atlasにアップロード�
 import os
 import sys
 
-# ライブラリパスを追加
-sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
+# ライブラリパスを絶対パスで追加
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib'))
+if lib_path not in sys.path:
+    sys.path.insert(0, lib_path)
 
-from mongodb_manager import MongoDBManager
-from utils import load_raw_data_files
+from lib.mongodb_manager import MongoDBManager
+from lib.utils import load_raw_data_files, load_raw_data_file
 
 
 def main():
@@ -31,7 +33,7 @@ def main():
     print("✅ MongoDB Atlas接続成功")
     
     # 生データファイルを読み込み
-    raw_data_files = load_raw_data_files()
+    raw_data_files = load_raw_data_files('raw_data')
     if not raw_data_files:
         print("❌ raw_dataフォルダにJSONファイルが見つかりません")
         return
@@ -42,9 +44,16 @@ def main():
     success_count = 0
     error_count = 0
     
-    for i, (world_id, raw_data) in enumerate(raw_data_files.items(), 1):
+    for i, filename in enumerate(raw_data_files, 1):
+        filepath = os.path.join('raw_data', filename)
+        data = load_raw_data_file(filepath)
+        if not data:
+            print(f"❌ ファイル読み込み失敗: {filename}")
+            error_count += 1
+            continue
+        world_id = data.get('world_id', filename)
+        raw_data = data.get('raw_data', {})
         print(f"\n🔄 [{i}/{len(raw_data_files)}] アップロード中: {world_id}")
-        
         try:
             # MongoDBに保存
             result = mongodb.save_world_data(raw_data)
@@ -54,7 +63,6 @@ def main():
             else:
                 print(f"❌ {world_id}: アップロード失敗")
                 error_count += 1
-                
         except Exception as e:
             print(f"❌ {world_id}: エラー - {str(e)}")
             error_count += 1

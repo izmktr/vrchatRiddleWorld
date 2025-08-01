@@ -12,11 +12,14 @@ import sys
 import time
 from datetime import datetime
 
-# ライブラリパスを追加
-sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
 
-from vrchat_scraper import VRChatScraper
-from utils import load_world_urls, save_raw_data
+# ライブラリパスを絶対パスで追加
+lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib'))
+if lib_path not in sys.path:
+    sys.path.insert(0, lib_path)
+
+from lib.vrchat_scraper import VRChatWorldScraper
+from lib.utils import load_world_urls, save_raw_data
 
 
 def main():
@@ -25,10 +28,10 @@ def main():
     print("=" * 50)
     
     # スクレイパー初期化
-    scraper = VRChatScraper()
+    scraper = VRChatWorldScraper()
     
     # ワールドURLリストを読み込み
-    world_urls = load_world_urls()
+    world_urls = load_world_urls('vrcworld.txt')
     if not world_urls:
         print("❌ vrcworld.txtにワールドURLが見つかりません")
         return
@@ -58,28 +61,20 @@ def main():
                 continue
             
             # サムネイルダウンロード（既存ファイルはスキップ）
-            thumbnail_url = world_data.get('thumbnailImageUrl')
-            if thumbnail_url:
-                thumbnail_result = scraper.download_thumbnail(world_id, thumbnail_url)
-                if thumbnail_result == "skipped":
-                    print(f"⏭️  サムネイル: {world_id}.jpg（既存ファイル）")
-                elif thumbnail_result:
+            thumbnail_result = scraper.download_thumbnail(world_data, 'thumbnail')
+            if thumbnail_result:
+                status, _path = thumbnail_result
+                if status == 'downloaded':
                     print(f"✅ サムネイル: {world_id}.jpg（ダウンロード完了）")
+                elif status == 'skipped':
+                    print(f"⏭️  サムネイル: {world_id}.jpg（既存ファイル）")
                 else:
                     print(f"⚠️  サムネイル: ダウンロード失敗")
+            else:
+                print(f"⚠️  サムネイル: ダウンロード失敗")
             
-            # 生データを保存（上書き）
-            raw_data_entry = {
-                "timestamp": datetime.now().isoformat(),
-                "world_id": world_id,
-                "source": "vrchat_api",
-                "raw_data": {
-                    **world_data,
-                    "scraped_at": datetime.now().isoformat()
-                }
-            }
-            
-            if save_raw_data(world_id, raw_data_entry):
+            # 生データを保存（save_raw_dataの仕様に合わせてworld_dataを直接渡す）
+            if save_raw_data(world_data, 'raw_data'):
                 print(f"✅ 生データ: {world_id}（保存完了）")
                 success_count += 1
             else:
