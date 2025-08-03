@@ -1,178 +1,115 @@
-# NazoWeb - TypeScript Frontend
+# VRChat謎解きワールド Webアプリケーション
 
-## 概要
+VRChatの謎解きワールドを探索・検索できるWebアプリケーションです。
 
-`web_old` フォルダの HTML ファイルを TypeScript で再構築した現代的な Web アプリケーションです。
+## 機能
+
+- **ワールド一覧表示**: MongoDBに保存されたVRChatワールドデータを表示
+- **タグ検索**: タグによるワールドの絞り込み検索
+- **詳細ページ**: 各ワールドの詳細情報表示
+- **Google認証**: Googleアカウントでのログイン機能
+- **レスポンシブデザイン**: モバイル・デスクトップ対応
 
 ## 技術スタック
 
-- **TypeScript**: 型安全な JavaScript 開発
-- **Vite**: 高速な開発サーバーとビルドツール  
-- **Vanilla CSS**: カスタムスタイル
-- **ES Modules**: モダンなモジュールシステム
+- **フロントエンド**: Next.js 14, React, TypeScript
+- **スタイリング**: Tailwind CSS
+- **データベース**: MongoDB Atlas
+- **認証**: NextAuth.js (Google OAuth)
+- **デプロイ**: Vercel
 
-## プロジェクト構造
-
-```
-web/
-├── package.json          # Node.js 依存関係とスクリプト
-├── tsconfig.json         # TypeScript 設定
-├── vite.config.ts        # Vite 設定
-├── index.html            # メインページ
-├── manage-worlds.html    # 管理ページ
-└── src/
-    ├── main.ts           # メインページロジック
-    ├── manage.ts         # 管理ページロジック
-    ├── types/
-    │   └── index.ts      # 型定義
-    ├── utils/
-    │   └── api.ts        # API クライアント
-    └── styles/
-        └── main.css      # スタイル
-```
-
-## セットアップ
+## 開発環境セットアップ
 
 ### 1. 依存関係のインストール
 
 ```bash
-cd web
 npm install
 ```
 
-### 2. 開発サーバーの起動
+### 2. 環境変数の設定
+
+`.env.local.example` を `.env.local` にコピーして、以下の値を設定:
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+MONGODB_DB_NAME=vrcworld
+
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret_here
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+### 3. Google OAuth設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成
+2. OAuth 2.0 クライアントIDを作成
+3. 承認済みリダイレクトURIに `http://localhost:3000/api/auth/callback/google` を追加
+
+### 4. 開発サーバー起動
 
 ```bash
 npm run dev
 ```
 
-http://localhost:3000 でアクセス可能
+http://localhost:3000 でアプリケーションが起動します。
 
-### 3. ビルド
+## Vercelデプロイ
 
-```bash
-npm run build
-```
-
-`dist/` フォルダに本番用ファイルが生成されます
-
-## 機能
-
-### メインページ (`/`)
-- ✅ VRChat ワールド一覧表示
-- ✅ グリッドレイアウト
-- ✅ 検索・フィルタリング
-- ✅ ソート機能
-- ✅ ページネーション
-- ✅ レスポンシブデザイン
-
-### 管理ページ (`/manage-worlds.html`)  
-- ✅ テーブル形式でワールド管理
-- ✅ 複数選択・一括選択
-- ✅ CSV/JSON エクスポート
-- ✅ 詳細な統計情報
-- ✅ 管理操作パネル
-
-## API 統合
-
-### 開発環境
-- API プロキシ設定済み (`localhost:5000`)
-- CORS 対応
-
-### 本番環境 (Vercel)
-- 同一オリジンでの API アクセス
-- 自動的な URL 切り替え
-
-## 画像対応
-
-### 優先順位
-1. **VRChat 公式サムネイル URL** (`thumbnailImageUrl`)
-2. **VRChat 元画像 URL** (`imageUrl`) 
-3. **外部 URL** (`thumbnail_url`)
-4. **ローカルサムネイル** (開発環境のみ)
-5. **プレースホルダー** (フォールバック)
-
-## 型安全性
-
-- 🎯 **完全な TypeScript 対応**
-- 🔒 **型定義ファイル完備**
-- ⚡ **IDE サポート充実**
-- 🛡️ **コンパイル時エラー検出**
-
-## パフォーマンス
-
-- ⚡ **Vite の高速ビルド**
-- 🗜️ **Tree Shaking 対応**
-- 📦 **コードスプリッティング**
-- 🎨 **CSS ミニファイ**
-
-## 開発コマンド
+### 1. Vercelプロジェクト作成
 
 ```bash
-# 開発サーバー
-npm run dev
-
-# ビルド
-npm run build
-
-# プレビュー
-npm run preview
-
-# 型チェック
-npm run type-check
+npx vercel
 ```
 
-## 従来版との比較
+### 2. 環境変数設定
 
-| 項目 | web_old (HTML) | web (TypeScript) |
-|------|---------------|------------------|
-| **開発体験** | ❌ ファイル編集 | ✅ TypeScript + Hot Reload |
-| **型安全性** | ❌ なし | ✅ 完全対応 |
-| **モジュール化** | ❌ 単一ファイル | ✅ ES Modules |
-| **ビルド最適化** | ❌ なし | ✅ Vite 最適化 |
-| **保守性** | ⚠️ 中程度 | ✅ 高い |
+Vercelダッシュボードで以下の環境変数を設定:
 
-## デプロイ
+- `MONGODB_URI`
+- `MONGODB_DB_NAME`
+- `NEXTAUTH_URL` (本番URL)
+- `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
 
-### Vercel での配信
-- `web/` フォルダが静的ファイルとして配信
-- `vercel.json` でルーティング設定済み
-- 自動的な API プロキシ
+### 3. Google OAuth本番設定
 
-### 手動ビルド
-```bash
-npm run build
-# dist/ フォルダを任意のホスティングサービスにアップロード
+Google Cloud Consoleで本番URLのリダイレクトURIを追加:
+`https://yourdomain.vercel.app/api/auth/callback/google`
+
+## データ構造
+
+MongoDBコレクション `worlds` の想定構造:
+
+```json
+{
+  "world_id": "wrld_xxx",
+  "timestamp": "2025-08-01T00:00:00.000Z",
+  "source": "vrchat_api",
+  "raw_data": {
+    "id": "wrld_xxx",
+    "name": "ワールド名",
+    "description": "説明",
+    "authorName": "制作者",
+    "authorId": "usr_xxx",
+    "tags": ["tag1", "tag2"],
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z",
+    "imageUrl": "https://...",
+    "thumbnailImageUrl": "https://...",
+    "visits": 1000,
+    "favorites": 100,
+    "capacity": 32,
+    "recommendedCapacity": 16
+  }
+}
 ```
 
-## 今後の拡張計画
+## API エンドポイント
 
-- 🔐 **認証機能**
-- 📱 **PWA 対応**  
-- 🌙 **ダークテーマ**
-- 🔍 **高度な検索機能**
-- 📊 **データビジュアライゼーション**
-- ⚡ **リアルタイム更新**
-
-## トラブルシューティング
-
-### よくある問題
-
-1. **npm install エラー**
-   ```bash
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
-
-2. **TypeScript エラー**
-   ```bash
-   npm run type-check
-   ```
-
-3. **開発サーバーが起動しない**
-   - ポート 3000 が使用中か確認
-   - `vite.config.ts` の設定を確認
-
-4. **API 接続エラー**
-   - バックエンドサーバーが起動しているか確認
-   - CORS 設定を確認
+- `GET /api/worlds` - ワールド一覧取得
+- `GET /api/worlds/[id]` - ワールド詳細取得
+- `GET /api/tags` - タグ一覧取得
+- `/api/auth/*` - NextAuth.js認証エンドポイント
