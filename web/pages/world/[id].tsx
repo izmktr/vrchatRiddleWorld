@@ -10,32 +10,29 @@ import ImageWithFallback from '../../components/ImageWithFallback'
 
 interface WorldDetail {
   id: string
-  timestamp: string
-  source: string
-  raw_data: {
-    id: string
-    name: string
-    description: string
-    authorName: string
-    authorId: string
-    capacity: number
-    recommendedCapacity: number
-    visits: number
-    popularity: number
-    heat: number
-    favorites: number
-    publicationDate: string
-    labsPublicationDate: string
-    created_at: string
-    updated_at: string
-    version: number
-    releaseStatus: string
-    imageUrl?: string
-    thumbnailImageUrl?: string
-    tags: string[]
-    instances: any[]
-    [key: string]: any
-  }
+  name: string
+  imageUrl?: string
+  thumbnailImageUrl?: string
+  authorName: string
+  authorId: string
+  tags: string[]
+  created_at: string
+  updated_at: string
+  description: string
+  visits: number
+  favorites: number
+  popularity: number
+  capacity: number
+  recommendedCapacity: number
+  releaseStatus: string
+  organization: string
+  labsPublicationDate: string
+  publicationDate: string
+  version: number
+  heat: number
+  featured: boolean
+  scraped_at: string
+  source_url: string
 }
 
 export default function WorldDetail() {
@@ -44,6 +41,7 @@ export default function WorldDetail() {
   const { data: session } = useSession()
   const [world, setWorld] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showDebugInfo, setShowDebugInfo] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -86,13 +84,36 @@ export default function WorldDetail() {
     )
   }
 
-  const { raw_data } = world
+  // タグの処理関数
+  const processTag = (tag: string): string | null => {
+    // system_approvedは非表示
+    if (tag === 'system_approved') {
+      return null;
+    }
+    // author_tag_で始まる場合はプレフィックスを削除
+    if (tag.startsWith('author_tag_')) {
+      return tag.replace('author_tag_', '');
+    }
+    return tag;
+  }
+
+  // 日付の安全な処理関数
+  const formatSafeDate = (dateString: string): string => {
+    if (!dateString || dateString.trim() === '') return '不明'
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '不明'
+      return format(date, 'yyyy年MM月dd日 HH:mm', { locale: ja })
+    } catch {
+      return '不明'
+    }
+  }
 
   return (
     <>
       <Head>
-        <title>{raw_data.name} - VRChat謎解きワールド</title>
-        <meta name="description" content={raw_data.description} />
+        <title>{world.name} - VRChat謎解きワールド</title>
+        <meta name="description" content={world.description} />
       </Head>
 
       <div className="min-h-screen bg-gray-50">
@@ -116,10 +137,10 @@ export default function WorldDetail() {
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             {/* メイン画像 */}
             <div className="relative h-96 bg-gray-200">
-              {raw_data.imageUrl ? (
+              {world.thumbnailImageUrl || world.imageUrl ? (
                 <ImageWithFallback
-                  src={raw_data.imageUrl}
-                  alt={raw_data.name}
+                  src={world.thumbnailImageUrl || world.imageUrl || ''}
+                  alt={world.name}
                   fill
                   className="object-cover"
                 />
@@ -136,7 +157,7 @@ export default function WorldDetail() {
             <div className="p-8">
               {/* タイトル */}
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                {raw_data.name}
+                {world.name}
               </h1>
 
               {/* 基本情報 */}
@@ -146,23 +167,23 @@ export default function WorldDetail() {
                   <dl className="space-y-2">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">制作者</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.authorName}</dd>
+                      <dd className="text-sm text-gray-900">{world.authorName}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">ワールドID</dt>
-                      <dd className="text-sm text-gray-900 font-mono">{raw_data.id}</dd>
+                      <dd className="text-sm text-gray-900 font-mono">{world.id}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">制作者ID</dt>
-                      <dd className="text-sm text-gray-900 font-mono">{raw_data.authorId}</dd>
+                      <dd className="text-sm text-gray-900 font-mono">{world.authorId}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">リリース状態</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.releaseStatus}</dd>
+                      <dd className="text-sm text-gray-900">{world.releaseStatus}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">バージョン</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.version}</dd>
+                      <dd className="text-sm text-gray-900">{world.version}</dd>
                     </div>
                   </dl>
                 </div>
@@ -172,24 +193,24 @@ export default function WorldDetail() {
                   <dl className="space-y-2">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">訪問者数</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.visits.toLocaleString()}人</dd>
+                      <dd className="text-sm text-gray-900">{world.visits.toLocaleString()}人</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">お気に入り数</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.favorites.toLocaleString()}人</dd>
+                      <dd className="text-sm text-gray-900">{world.favorites.toLocaleString()}人</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">人気度</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.popularity}</dd>
+                      <dd className="text-sm text-gray-900">{world.popularity}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">ヒート値</dt>
-                      <dd className="text-sm text-gray-900">{raw_data.heat}</dd>
+                      <dd className="text-sm text-gray-900">{world.heat}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">定員</dt>
                       <dd className="text-sm text-gray-900">
-                        {raw_data.capacity}人 (推奨: {raw_data.recommendedCapacity}人)
+                        {world.capacity}人 (推奨: {world.recommendedCapacity}人)
                       </dd>
                     </div>
                   </dl>
@@ -199,18 +220,21 @@ export default function WorldDetail() {
               {/* 説明 */}
               <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-4">説明</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">{raw_data.description}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{world.description}</p>
               </div>
 
               {/* タグ */}
               <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-4">タグ</h2>
                 <div className="flex flex-wrap gap-2">
-                  {raw_data.tags.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
+                  {world.tags
+                    .map((tag: string) => processTag(tag))
+                    .filter((tag): tag is string => tag !== null)
+                    .map((displayTag: string, index: number) => (
+                      <span key={index} className="tag">
+                        {displayTag}
+                      </span>
+                    ))}
                 </div>
               </div>
 
@@ -221,25 +245,25 @@ export default function WorldDetail() {
                   <div>
                     <dt className="text-sm font-medium text-gray-500">作成日</dt>
                     <dd className="text-sm text-gray-900">
-                      {format(new Date(raw_data.created_at), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                      {formatSafeDate(world.created_at)}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">更新日</dt>
                     <dd className="text-sm text-gray-900">
-                      {format(new Date(raw_data.updated_at), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                      {formatSafeDate(world.updated_at)}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Labs公開日</dt>
                     <dd className="text-sm text-gray-900">
-                      {format(new Date(raw_data.labsPublicationDate), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                      {formatSafeDate(world.labsPublicationDate)}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">一般公開日</dt>
                     <dd className="text-sm text-gray-900">
-                      {format(new Date(raw_data.publicationDate), 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                      {formatSafeDate(world.publicationDate)}
                     </dd>
                   </div>
                 </dl>
@@ -247,11 +271,21 @@ export default function WorldDetail() {
 
               {/* デバッグ情報（開発環境のみ） */}
               {process.env.NODE_ENV === 'development' && (
-                <div className="mt-8 p-4 bg-gray-100 rounded-lg">
-                  <h2 className="text-lg font-semibold mb-4">デバッグ情報</h2>
-                  <pre className="text-xs overflow-auto">
-                    {JSON.stringify(world, null, 2)}
-                  </pre>
+                <div className="mt-8">
+                  <button
+                    onClick={() => setShowDebugInfo(!showDebugInfo)}
+                    className="text-xs text-gray-400 hover:text-gray-600 underline cursor-pointer"
+                  >
+                    {showDebugInfo ? 'デバッグ情報を隠す' : 'デバッグ情報を表示'}
+                  </button>
+                  {showDebugInfo && (
+                    <div className="mt-2 p-4 bg-gray-100 rounded-lg">
+                      <h2 className="text-lg font-semibold mb-4">デバッグ情報</h2>
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(world, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

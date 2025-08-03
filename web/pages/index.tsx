@@ -24,6 +24,8 @@ interface World {
 interface Tag {
   name: string
   count: number
+  displayName?: string
+  originalName?: string
 }
 
 export default function Home() {
@@ -34,6 +36,19 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
+
+  // タグの処理関数
+  const processTag = (tag: string): string | null => {
+    // system_approvedは非表示
+    if (tag === 'system_approved') {
+      return null;
+    }
+    // author_tag_で始まる場合はプレフィックスを削除
+    if (tag.startsWith('author_tag_')) {
+      return tag.replace('author_tag_', '');
+    }
+    return tag;
+  }
 
   // 安全な日付フォーマット関数
   const formatSafeDate = (dateString: string): string => {
@@ -59,7 +74,15 @@ export default function Home() {
     try {
       const response = await fetch('/api/tags')
       const data = await response.json()
-      setTags(data)
+      // system_approvedを除外してタグを処理
+      const filteredTags = data
+        .filter((tag: Tag) => tag.name !== 'system_approved')
+        .map((tag: Tag) => ({
+          ...tag,
+          displayName: processTag(tag.name) || tag.name,
+          originalName: tag.name
+        }))
+      setTags(filteredTags)
     } catch (error) {
       console.error('Error fetching tags:', error)
     }
@@ -111,9 +134,11 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <h1 className="text-2xl font-bold text-vrchat-primary">
-                  VRChat謎解きワールド
-                </h1>
+                <Link href="/">
+                  <h1 className="text-2xl font-bold text-vrchat-primary cursor-pointer hover:text-orange-600 transition-colors">
+                    VRChat謎解きワールド
+                  </h1>
+                </Link>
               </div>
               
               <div className="flex items-center space-x-4">
@@ -159,15 +184,15 @@ export default function Home() {
               </button>
               {tags.map((tag) => (
                 <button
-                  key={tag.name}
-                  onClick={() => handleTagChange(tag.name)}
+                  key={tag.originalName || tag.name}
+                  onClick={() => handleTagChange(tag.originalName || tag.name)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedTag === tag.name
+                    selectedTag === (tag.originalName || tag.name)
                       ? 'bg-vrchat-secondary text-white'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  {tag.name} ({tag.count})
+                  {tag.displayName || tag.name} ({tag.count})
                 </button>
               ))}
             </div>
@@ -215,13 +240,19 @@ export default function Home() {
 
                       {/* タグ */}
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {world.tags.slice(0, 3).map((tag) => (
-                          <span key={tag} className="tag">
-                            {tag}
-                          </span>
-                        ))}
-                        {world.tags.length > 3 && (
-                          <span className="tag">+{world.tags.length - 3}</span>
+                        {world.tags
+                          .filter(tag => tag !== 'system_approved')
+                          .slice(0, 3)
+                          .map((tag) => {
+                            const displayTag = processTag(tag);
+                            return displayTag ? (
+                              <span key={tag} className="tag">
+                                {displayTag}
+                              </span>
+                            ) : null;
+                          })}
+                        {world.tags.filter(tag => tag !== 'system_approved').length > 3 && (
+                          <span className="tag">+{world.tags.filter(tag => tag !== 'system_approved').length - 3}</span>
                         )}
                       </div>
 
