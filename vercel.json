@@ -1,15 +1,19 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.py": {
-      "runtime": "@vercel/python",
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
     },
-    "api/thumbnail.py": {
-      "runtime": "@vercel/python",
-      "maxDuration": 10
+    {
+      "src": "api/thumbnail.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "web/package.json",
+      "use": "@vercel/next"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/world/(.*)",
@@ -22,7 +26,10 @@
     {
       "src": "/api/(.*)",
       "dest": "/api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/web/$1"
     }
-  ],
-  "outputDirectory": "web/.next"
+  ]
 }
