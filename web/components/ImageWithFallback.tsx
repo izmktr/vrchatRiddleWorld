@@ -21,11 +21,18 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   const [imgSrc, setImgSrc] = useState(src)
   const [hasError, setHasError] = useState(false)
+  const [useDirectImage, setUseDirectImage] = useState(false)
 
   const handleError = () => {
-    setHasError(true)
-    // フォールバック画像のURL
-    setImgSrc('https://via.placeholder.com/256x256/e5e7eb/6b7280?text=No+Image')
+    if (!useDirectImage && src.includes('api.vrchat.cloud')) {
+      // VRChat APIの場合、Next.jsの画像最適化を迂回して直接表示を試す
+      setUseDirectImage(true)
+      setImgSrc(src) // 元のURLに戻す
+    } else {
+      setHasError(true)
+      // フォールバック画像のURL
+      setImgSrc('https://via.placeholder.com/256x256/e5e7eb/6b7280?text=No+Image')
+    }
   }
 
   if (hasError) {
@@ -39,6 +46,21 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     )
   }
 
+  // VRChat APIで直接画像表示を使用する場合
+  if (useDirectImage) {
+    return (
+      <img
+        src={imgSrc}
+        alt={alt}
+        className={className}
+        onError={handleError}
+        style={fill ? { width: '100%', height: '100%', objectFit: 'cover' } : undefined}
+        width={width}
+        height={height}
+      />
+    )
+  }
+
   return (
     <Image
       src={imgSrc}
@@ -48,6 +70,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       height={height}
       className={className}
       onError={handleError}
+      unoptimized={src.includes('api.vrchat.cloud')} // VRChat APIの場合は最適化を無効化
       {...props}
     />
   )
