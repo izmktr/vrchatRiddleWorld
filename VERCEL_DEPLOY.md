@@ -45,15 +45,20 @@ git push origin main
 
 理由：プロジェクトは`vercel.json`でカスタム設定を使用するため、フレームワークの自動設定は不要です。
 
-**デプロイ対象フォルダ**: `web/`フォルダがTypeScriptで新しく作成されました。以下の構成になっています：
+**デプロイ対象フォルダ**: `web/`フォルダは**Next.js 14**プロジェクトです。以下の構成になっています：
 
-- **Frontend**: TypeScript + Vite + 現代的なESモジュール
-- **Build**: `web/dist/`に出力される静的ファイル
+- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
+- **Build**: `web/.next/`に出力される静的ファイル
 - **Development**: `web/`フォルダで`npm run dev`で開発サーバー起動可能
 
 ### 3. 環境変数の設定
 
 **Settings > Environment Variables** で以下を設定：
+
+#### MongoDB設定（必須）
+```
+MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/your-database?retryWrites=true&w=majority
+```
 
 #### Firebase設定（必須）
 ```
@@ -102,8 +107,8 @@ PYTHON_VERSION=3.9
 
 デプロイ後、以下のエンドポイントが利用可能：
 
-- `/` - メインページ（index.html）
-- `/api/vrchat_worlds` - VRChatワールドデータ（制限付き）
+- `/` - メインページ（Next.jsアプリケーション）
+- `/api/vrchat_worlds` - VRChatワールドデータ（制限付き、デフォルト100件）
 - `/api/vrchat_worlds/all` - 全VRChatワールドデータ
 - `/api/stats` - 統計情報
 - `/api/health` - ヘルスチェック

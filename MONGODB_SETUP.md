@@ -60,6 +60,27 @@ pip install -r requirements.txt
 - `certifi>=2023.7.22` - SSL証明書検証
 - `dnspython>=2.4.2` - SRV記録解決（Atlas必須）
 
+### 3.1 MongoDB Compass（推奨GUI ツール）
+
+**MongoDB Compass**は、MongoDBの公式GUIツールです。データベースの管理、クエリ実行、インデックス作成を視覚的に行えます。
+
+#### インストール方法
+1. [MongoDB Compass](https://www.mongodb.com/products/compass)から無料版をダウンロード
+2. インストール後、MongoDB AtlasのConnection Stringで接続
+
+#### 主な機能
+- **データ閲覧**: コレクションとドキュメントの表示
+- **クエリ実行**: GUIでのクエリ作成・実行
+- **インデックス管理**: インデックスの作成・削除・監視
+- **スキーマ分析**: データ構造の自動分析
+- **パフォーマンス監視**: 実行計画とクエリ性能の分析
+
+#### 接続方法
+1. MongoDB Compassを起動
+2. 「New Connection」をクリック
+3. `.env`ファイルの`MONGODB_URI`をコピー&ペースト
+4. 「Connect」をクリック
+
 ## 4. プログラム実行
 
 ### 4.1 バッチスクレイピング（MongoDB版）
@@ -129,12 +150,118 @@ GET /api/vrchat_worlds?search=puzzle&sort=popularity&order=desc&page=1&limit=20
 }
 ```
 
-### 6.3 インデックス
-自動作成されるインデックス：
-- `world_id` - 一意インデックス
-- テキスト検索用インデックス（name, title, description, authorName）
-- `popularity` - 人気度ソート用
-- `updated_at` - 更新日時ソート用
+### 6.3 インデックス設定
+
+#### 基本インデックス（自動作成）
+- `_id` - プライマリキー
+- `world_id` - 一意インデックス（手動作成推奨）
+
+#### パフォーマンス向上用インデックス（推奨）
+
+**単一フィールドインデックス:**
+```javascript
+// MongoDB Compass または mongo shell で実行
+db.worlds.createIndex({ "world_id": 1 }, { unique: true })
+db.worlds.createIndex({ "updated_at": -1 })  // 最重要：デフォルトソート
+db.worlds.createIndex({ "popularity": -1 })
+db.worlds.createIndex({ "visits": -1 })
+db.worlds.createIndex({ "favorites": -1 })
+db.worlds.createIndex({ "heat": -1 })
+```
+
+**複合インデックス:**
+```javascript
+// タグフィルター + ソート用
+db.worlds.createIndex({ "tags": 1, "updated_at": -1 })
+db.worlds.createIndex({ "tags": 1, "popularity": -1 })
+db.worlds.createIndex({ "tags": 1, "visits": -1 })
+```
+
+**テキスト検索インデックス（従来型）:**
+```javascript
+// 基本的な全文検索用（Atlas Search推奨前の代替案）
+db.worlds.createIndex({
+  "name": "text",
+  "description": "text",
+  "authorName": "text"
+}, {
+  weights: {
+    "name": 10,
+    "authorName": 5,
+    "description": 1
+  },
+  name: "text_search_index"
+})
+```
+
+#### Atlas Search Index（推奨）
+
+MongoDB Atlas管理画面で以下のSearch Indexを作成：
+
+**Index Name:** `world_search`
+
+**Index Definition:**
+```json
+{
+  "mappings": {
+    "fields": {
+      "name": {
+        "type": "string",
+        "analyzer": "standard"
+      },
+      "description": {
+        "type": "string",
+        "analyzer": "standard"  
+      },
+      "authorName": {
+        "type": "string",
+        "analyzer": "standard"
+      },
+      "tags": {
+        "type": "stringFacet"
+      },
+      "updated_at": {
+        "type": "date"
+      },
+      "popularity": {
+        "type": "number"
+      }
+    }
+  }
+}
+```
+
+**Atlas Search使用時のクエリ例:**
+```javascript
+db.worlds.aggregate([
+  {
+    $search: {
+      index: "world_search",
+      compound: {
+        must: [
+          {
+            text: {
+              query: "puzzle",
+              path: ["name", "description", "authorName"]
+            }
+          }
+        ],
+        filter: [
+          {
+            text: {
+              query: "game",
+              path: "tags"
+            }
+          }
+        ]
+      }
+    }
+  },
+  { $sort: { updated_at: -1 } },
+  { $skip: 0 },
+  { $limit: 12 }
+])
+```
 
 ## 7. トラブルシューティング
 
@@ -170,9 +297,42 @@ ServerSelectionTimeoutError
 3. **Environment Variables**: 環境変数は安全に管理
 
 ### 8.2 パフォーマンス最適化
-1. **Indexes**: データ量に応じて追加インデックスを作成
-2. **Connection Pooling**: アプリケーション設定で接続プールを最適化
-3. **Read Preference**: 読み取り分散設定を検討
+
+#### インデックス作成
+**MongoDB Compass を使用（推奨）:**
+1. MongoDB Compassを開く
+2. データベース`vrcworld` → コレクション`worlds`を選択
+3. 「Indexes」タブをクリック
+4. 「CREATE INDEX」ボタンをクリック
+5. 以下のインデックスを順番に作成：
+
+```javascript
+// 基本インデックス（優先度：高）
+{ "world_id": 1 }  // Options: unique: true
+{ "updated_at": -1 }
+
+// ソート用インデックス（優先度：中）
+{ "popularity": -1 }
+{ "visits": -1 }
+{ "favorites": -1 }
+
+// 複合インデックス（優先度：中）
+{ "tags": 1, "updated_at": -1 }
+```
+
+**Mongo Shell/MongoDB Atlas Web UI を使用:**
+```javascript
+// 基本インデックス
+db.worlds.createIndex({ "world_id": 1 }, { unique: true })
+db.worlds.createIndex({ "updated_at": -1 })
+db.worlds.createIndex({ "popularity": -1 })
+db.worlds.createIndex({ "tags": 1, "updated_at": -1 })
+```
+
+#### その他の最適化
+1. **Connection Pooling**: アプリケーション設定で接続プールを最適化
+2. **Read Preference**: 読み取り分散設定を検討  
+3. **Atlas Search**: 全文検索性能向上のためSearch Indexを作成
 
 ## 9. 移行作業
 
