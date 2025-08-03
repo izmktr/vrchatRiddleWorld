@@ -92,6 +92,28 @@ PYTHON_VERSION=3.9
 2. ビルドが完了するまで待機（約2-5分）
 3. デプロイ完了後、URLが生成される
 
+#### 自動デプロイが動作しない場合の手動デプロイ
+
+1. **Vercel CLIをインストール**
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **ローカルからデプロイ**
+   ```bash
+   # プロジェクトルートで実行
+   vercel --prod
+   ```
+
+3. **GitHubとの連携確認**
+   - Vercelダッシュボード > Settings > Git
+   - 「Connected Git Repository」が正しく設定されているか確認
+   - 必要に応じて再接続
+
+4. **手動トリガー**
+   - Vercelダッシュボード > Deployments
+   - 「Redeploy」ボタンをクリック
+
 ## 設定ファイルの説明
 
 ### vercel.json

@@ -1,0 +1,12 @@
+web/
+api/
+*.log
+.env*
+!.env.example
+node_modules/
+.next/
+.vercel/
+dist/
+build/
+*.tgz
+*.tar.gz
