@@ -1,25 +1,23 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import sys
-import json
 from datetime import datetime, timezone
 
 # パスを追加してローカルモジュールをインポート
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    # Vercel環境用のFirebase設定を使用
-    from api.firebase_config import db, get_all_worlds
+    # Vercel環境用のMongoDB設定を使用
+    from api.mongodb_config import get_all_worlds, get_world_by_id
+    mongodb_available = True
 except ImportError:
-    try:
-        # ローカル環境用のFirebase設定をフォールバック
-        from python.firebase_config import db, get_all_worlds
-    except ImportError:
-        # Firebase利用不可の場合
-        db = None
-        def get_all_worlds():
-            return []
+    # MongoDB利用不可の場合
+    mongodb_available = False
+    def get_all_worlds():
+        return []
+    def get_world_by_id(world_id):
+        return {}
 
 app = Flask(__name__)
 CORS(app)
@@ -30,7 +28,7 @@ def get_vrchat_worlds():
     try:
         limit = int(request.args.get('limit', 100))
         
-        if db is None:
+        if not mongodb_available:
             return jsonify({
                 'success': False,
                 'error': 'Database not available',
@@ -66,7 +64,7 @@ def get_vrchat_worlds():
 def get_all_vrchat_worlds():
     """全てのVRChatワールドデータを取得（制限なし）"""
     try:
-        if db is None:
+        if not mongodb_available:
             return jsonify({
                 'success': False,
                 'error': 'Database not available',
@@ -97,7 +95,7 @@ def get_all_vrchat_worlds():
 def get_stats():
     """統計情報を取得"""
     try:
-        if db is None:
+        if not mongodb_available:
             return jsonify({
                 'success': False,
                 'error': 'Database not available',
@@ -148,13 +146,46 @@ def get_stats():
             'stats': {'total_worlds': 0}
         }), 500
 
+@app.route('/api/world/<world_id>', methods=['GET'])
+def get_world(world_id):
+    """特定のワールドデータを取得"""
+    try:
+        if not mongodb_available:
+            return jsonify({
+                'success': False,
+                'error': 'Database not available',
+                'world': {}
+            })
+        
+        world = get_world_by_id(world_id)
+        
+        if not world:
+            return jsonify({
+                'success': False,
+                'error': 'World not found',
+                'world': {}
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'world': world
+        })
+        
+    except Exception as e:
+        print(f"Error in get_world: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'world': {}
+        }), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """ヘルスチェックエンドポイント"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),
-        'database_connected': db is not None
+        'database_connected': mongodb_available
     })
 
 # Vercel用のハンドラー

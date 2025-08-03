@@ -1,30 +1,20 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb"
-      }
+  "functions": {
+    "api/index.py": {
+      "runtime": "@vercel/python",
+      "maxDuration": 30
     },
-    {
-      "src": "api/thumbnail.py", 
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "10mb"
-      }
-    },
-    {
-      "src": "web/package.json",
-      "use": "@vercel/next@latest",
-      "config": {
-        "buildCommand": "cd web && npm run build",
-        "installCommand": "cd web && npm install"
-      }
+    "api/thumbnail.py": {
+      "runtime": "@vercel/python",
+      "maxDuration": 10
     }
-  ],
+  },
   "routes": [
+    {
+      "src": "/api/world/(.*)",
+      "dest": "/api/index.py"
+    },
     {
       "src": "/api/thumbnail/(.*)",
       "dest": "/api/thumbnail.py"
@@ -32,13 +22,7 @@
     {
       "src": "/api/(.*)",
       "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/web/$1"
     }
   ],
-  "env": {
-    "PYTHON_VERSION": "3.9"
-  }
+  "outputDirectory": "web/.next"
 }
