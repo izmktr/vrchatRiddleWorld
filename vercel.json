@@ -17,9 +17,10 @@
     },
     {
       "src": "web/package.json",
-      "use": "@vercel/next",
+      "use": "@vercel/next@latest",
       "config": {
-        "distDir": ".next"
+        "buildCommand": "cd web && npm run build",
+        "installCommand": "cd web && npm install"
       }
     }
   ],
@@ -39,7 +40,5 @@
   ],
   "env": {
     "PYTHON_VERSION": "3.9"
-  },
-  "installCommand": "cd web && npm install",
-  "buildCommand": "cd web && npm run build"
+  }
 }
