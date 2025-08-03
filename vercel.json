@@ -3,11 +3,17 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
     },
     {
       "src": "api/thumbnail.py", 
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "10mb"
+      }
     },
     {
       "src": "web/package.json",
@@ -33,14 +39,6 @@
   ],
   "env": {
     "PYTHON_VERSION": "3.9"
-  },
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 30
-    },
-    "api/thumbnail.py": {
-      "maxDuration": 10
-    }
   },
   "installCommand": "cd web && npm install",
   "buildCommand": "cd web && npm run build"
