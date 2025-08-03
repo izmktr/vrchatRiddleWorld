@@ -45,11 +45,11 @@ git push origin main
 
 理由：プロジェクトは`vercel.json`でカスタム設定を使用するため、フレームワークの自動設定は不要です。
 
-**デプロイ対象フォルダ**: `web/`フォルダは**Next.js 14**プロジェクトです。以下の構成になっています：
+**デプロイ対象**: このプロジェクトは**ハイブリッド構成**です：
 
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **Build**: `web/.next/`に出力される静的ファイル
-- **Development**: `web/`フォルダで`npm run dev`で開発サーバー起動可能
+- **Backend**: Python Flask API（`api/`フォルダ）
+- **Frontend**: Next.js 14 + TypeScript（`web/`フォルダ）
+- **Build**: `vercel.json`で両方を統合してデプロイ
 
 ### 3. 環境変数の設定
 
@@ -126,15 +126,28 @@ PYTHON_VERSION=3.9
 
 ### よくある問題
 
-1. **Firebase接続エラー**
+1. **Google OAuth接続エラー**
+   - NEXTAUTH_URLが本番URLに設定されているか確認
+   - Google Cloud ConsoleのAuthorized redirect URIsが正しく設定されているか確認
+   - NEXTAUTH_SECRETが設定されているか確認
+
+2. **Firebase接続エラー**
    - 環境変数が正しく設定されているか確認
    - FIREBASE_PRIVATE_KEYの改行文字が適切か確認
 
-2. **ビルドエラー**
+3. **MongoDB接続エラー**
+   - MONGODB_URIが正しく設定されているか確認
+   - MongoDB Atlasのネットワークアクセス設定を確認
+
+4. **Next.jsビルドエラー**
+   - web/package.jsonの依存関係を確認
+   - TypeScriptの型エラーがないか確認
+
+5. **ビルドエラー**
    - requirements.txtの依存関係を確認
    - Python バージョンが3.9に設定されているか確認
 
-3. **サムネイル画像が表示されない**
+6. **サムネイル画像が表示されない**
    - thumbnailディレクトリがリポジトリに含まれているか確認
    - 画像ファイルサイズが制限内か確認
 

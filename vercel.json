@@ -6,8 +6,8 @@
       "use": "@vercel/python"
     },
     {
-      "src": "web/**",
-      "use": "@vercel/static"
+      "src": "web/package.json",
+      "use": "@vercel/next"
     }
   ],
   "routes": [
@@ -20,16 +20,8 @@
       "dest": "/api/thumbnail.py"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/web/$1"
-    },
-    {
-      "src": "/manage-worlds.html",
-      "dest": "/web/manage-worlds.html"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/web/index.html"
+      "dest": "/web/$1"
     }
   ],
   "env": {
