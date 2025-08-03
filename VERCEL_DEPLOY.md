@@ -60,6 +60,14 @@ git push origin main
 MONGODB_URI=mongodb+srv://your-username:your-password@your-cluster.mongodb.net/your-database?retryWrites=true&w=majority
 ```
 
+#### Google OAuth設定（必須）
+```
+NEXTAUTH_URL=https://your-vercel-domain.vercel.app
+NEXTAUTH_SECRET=your-generated-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
 #### Firebase設定（必須）
 ```
 FIREBASE_PROJECT_ID=your-firebase-project-id

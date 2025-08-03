@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import ImageWithFallback from '../components/ImageWithFallback'
+import Header from '../components/Header'
 
 interface World {
   id: string
@@ -147,42 +148,7 @@ export default function Home() {
 
       <div className="min-h-screen bg-gray-50">
         {/* ヘッダー */}
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <Link href="/">
-                  <h1 className="text-2xl font-bold text-vrchat-primary cursor-pointer hover:text-orange-600 transition-colors">
-                    VRChat謎解きワールド
-                  </h1>
-                </Link>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                {session ? (
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-700">
-                      こんにちは、{session.user?.name}さん
-                    </span>
-                    <button
-                      onClick={() => signOut()}
-                      className="btn-secondary"
-                    >
-                      ログアウト
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => signIn('google')}
-                    className="btn-primary"
-                  >
-                    Googleでログイン
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
+        <Header />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 検索フィールド */}
