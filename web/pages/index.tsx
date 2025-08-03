@@ -36,6 +36,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
   // タグの処理関数
   const processTag = (tag: string): string | null => {
@@ -68,7 +69,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchWorlds()
-  }, [selectedTag, page])
+  }, [selectedTag, page, searchQuery])
 
   const fetchTags = async () => {
     try {
@@ -94,7 +95,8 @@ export default function Home() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '12',
-        ...(selectedTag !== 'all' && { tag: selectedTag })
+        ...(selectedTag !== 'all' && { tag: selectedTag }),
+        ...(searchQuery.trim() && { search: searchQuery.trim() })
       })
       
       const response = await fetch(`/api/worlds?${params}`)
@@ -117,6 +119,21 @@ export default function Home() {
   const handleTagChange = (tag: string) => {
     setSelectedTag(tag)
     setPage(1)
+  }
+
+  const handleSearch = () => {
+    setPage(1)
+    // fetchWorldsは依存関係のuseEffectで自動的に呼ばれる
+  }
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
   }
 
   return (
@@ -168,6 +185,27 @@ export default function Home() {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* 検索フィールド */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">検索</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                onKeyPress={handleSearchKeyPress}
+                placeholder="ワールド名、説明、制作者名で検索..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-vrchat-secondary focus:border-transparent"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-6 py-2 bg-vrchat-secondary text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                検索
+              </button>
+            </div>
+          </div>
+
           {/* タグ検索 */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold mb-4">タグ検索</h2>
