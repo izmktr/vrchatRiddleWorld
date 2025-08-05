@@ -1,8 +1,8 @@
 {
   "version": 2,
   "name": "vrchat-riddle-world",
-  "buildCommand": "cd web && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "web/.next",
-  "installCommand": "cd web && npm install",
+  "installCommand": "npm run install",
   "framework": "nextjs"
 }
