@@ -20,6 +20,8 @@ interface World {
   description: string
   visits: number
   favorites: number
+  capacity?: number
+  recommendedCapacity?: number
 }
 
 interface Tag {
@@ -242,23 +244,20 @@ export default function Home() {
                         制作者: {world.authorName}
                       </p>
 
-                      {/* タグ */}
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {world.tags
-                          .filter(tag => tag !== 'system_approved')
-                          .slice(0, 3)
-                          .map((tag) => {
-                            const displayTag = processTag(tag);
-                            return displayTag ? (
-                              <span key={tag} className="tag">
-                                {displayTag}
-                              </span>
-                            ) : null;
-                          })}
-                        {world.tags.filter(tag => tag !== 'system_approved').length > 3 && (
-                          <span className="tag">+{world.tags.filter(tag => tag !== 'system_approved').length - 3}</span>
-                        )}
+                      {/* 定員情報 */}
+                      <div className="flex gap-4 mb-3 text-sm text-gray-700">
+                        <div>
+                          <span className="font-medium">定員:</span> {world.capacity || '不明'}
+                        </div>
+                        <div>
+                          <span className="font-medium">推奨:</span> {world.recommendedCapacity || '不明'}
+                        </div>
                       </div>
+
+                      {/* 説明 */}
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {world.description || '説明がありません'}
+                      </p>
 
                       {/* 日付 */}
                       <div className="text-xs text-gray-500">
