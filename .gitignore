@@ -257,6 +257,7 @@ Temporary Items
 # VRChat world data files (too large)
 vrcworld.txt
 world_data.txt
+error_world.txt
 
 # Test data
 test_data/
