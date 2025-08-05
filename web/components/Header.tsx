@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { Fragment } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline'
+import { useAdminMode } from '@/hooks/useAdminMode'
 
 export default function Header() {
   const { data: session, status } = useSession()
+  const { isActualAdmin, isAdminModeActive } = useAdminMode()
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -77,15 +79,17 @@ export default function Header() {
                           <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                             <p className="font-medium">{session.user?.name}</p>
                             <p className="text-gray-500">{session.user?.email}</p>
-                            {session.user?.isAdmin && (
-                              <p className="text-xs text-red-600 font-medium mt-1">🔐 管理者</p>
+                            {isActualAdmin && (
+                              <p className="text-xs text-red-600 font-medium mt-1">
+                                🔐 管理者{!isAdminModeActive && '（一時的にオフ）'}
+                              </p>
                             )}
                           </div>
                         )}
                       </Menu.Item>
                       
                       {/* 管理者メニュー */}
-                      {session.user?.isAdmin && (
+                      {isAdminModeActive && (
                         <>
                           <Menu.Item>
                             {({ active }) => (

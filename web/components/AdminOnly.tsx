@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react'
 import { ReactNode, useEffect, useState } from 'react'
+import { useAdminMode } from '@/hooks/useAdminMode'
 
 interface AdminOnlyProps {
   children: ReactNode
@@ -10,13 +11,14 @@ interface AdminOnlyProps {
  * 管理者のみ表示するコンポーネント
  */
 export function AdminOnly({ children, fallback = null }: AdminOnlyProps) {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
+  const { isAdminModeActive, isClient } = useAdminMode()
   
-  if (status === 'loading') {
+  if (status === 'loading' || !isClient) {
     return <div className="animate-pulse">読み込み中...</div>
   }
   
-  if (!session?.user?.isAdmin) {
+  if (!isAdminModeActive) {
     return <>{fallback}</>
   }
   
@@ -27,20 +29,15 @@ export function AdminOnly({ children, fallback = null }: AdminOnlyProps) {
  * 管理者ナビゲーションリンク
  */
 export function AdminNav() {
-  const { data: session, status } = useSession()
-  const [mounted, setMounted] = useState(false)
-  
-  // クライアントサイドマウント後のみ表示
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const { status } = useSession()
+  const { isAdminModeActive, isClient } = useAdminMode()
   
   // サーバーサイドレンダリング時とクライアントマウント前は何も表示しない
-  if (!mounted || status === 'loading') {
+  if (!isClient || status === 'loading') {
     return null
   }
   
-  if (!session?.user?.isAdmin) {
+  if (!isAdminModeActive) {
     return null
   }
   
@@ -49,6 +46,9 @@ export function AdminNav() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <span className="font-medium">管理者モード</span>
         <nav className="flex space-x-4">
+          <a href="/" className="hover:underline">
+            トップページ
+          </a>
           <a href="/admin" className="hover:underline">
             管理ダッシュボード
           </a>
