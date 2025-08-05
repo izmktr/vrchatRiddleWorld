@@ -44,6 +44,9 @@ export default function SafeAdminNav() {
           <a href="/admin/scraper" className="hover:underline">
             スクレイパー
           </a>
+          <a href="/admin/tags" className="hover:underline">
+            タグ管理
+          </a>
         </nav>
       </div>
     </div>

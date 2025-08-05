@@ -1,10 +1,16 @@
-import NextAuth from 'next-auth'
+import NextAuth, { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { MongoDBAdapter } from '@next-auth/mongodb-adapter'
 import clientPromise from '@/lib/mongodb'
-import { isAdmin } from '@/lib/auth'
 
-export default NextAuth({
+// 管理者メール判定関数（ここで定義して循環依存を回避）
+function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
+  return adminEmails.includes(email)
+}
+
+export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
@@ -19,17 +25,19 @@ export default NextAuth({
     async session({ session, token, user }) {
       // 管理者フラグを追加
       if (session.user?.email) {
-        session.user.isAdmin = isAdmin(session.user.email)
+        session.user.isAdmin = isAdminEmail(session.user.email)
       }
       return session
     },
     async jwt({ token, user }) {
       // JWTトークンに管理者フラグを追加
       if (token.email) {
-        token.isAdmin = isAdmin(token.email)
+        token.isAdmin = isAdminEmail(token.email)
       }
       return token
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-})
+}
+
+export default NextAuth(authOptions)
