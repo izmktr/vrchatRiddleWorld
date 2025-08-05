@@ -7,7 +7,7 @@ export default async function handler(
 ) {
   try {
     if (req.method === 'GET') {
-      const { page = 1, limit = 12, tag, search } = req.query
+      const { page = 1, limit = 12, tag, search, author } = req.query
       
       // MongoDB接続
       const client = await clientPromise
@@ -20,6 +20,11 @@ export default async function handler(
       // タグでフィルタリング
       if (tag && tag !== 'all') {
         query.tags = { $in: [tag] }
+      }
+      
+      // 制作者でフィルタリング
+      if (author) {
+        query.authorName = { $regex: `^${author}$`, $options: 'i' }
       }
       
       // 検索条件

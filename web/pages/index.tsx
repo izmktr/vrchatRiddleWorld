@@ -36,6 +36,7 @@ export default function Home() {
   const [worlds, setWorlds] = useState<World[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [selectedTag, setSelectedTag] = useState<string>('all')
+  const [selectedAuthor, setSelectedAuthor] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
@@ -72,7 +73,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchWorlds()
-  }, [selectedTag, page, searchQuery])
+  }, [selectedTag, page, searchQuery, selectedAuthor])
 
   const fetchTags = async () => {
     try {
@@ -99,7 +100,8 @@ export default function Home() {
         page: page.toString(),
         limit: '12',
         ...(selectedTag !== 'all' && { tag: selectedTag }),
-        ...(searchQuery.trim() && { search: searchQuery.trim() })
+        ...(searchQuery.trim() && { search: searchQuery.trim() }),
+        ...(selectedAuthor.trim() && { author: selectedAuthor.trim() })
       })
       
       const response = await fetch(`/api/worlds?${params}`)
@@ -121,6 +123,22 @@ export default function Home() {
 
   const handleTagChange = (tag: string) => {
     setSelectedTag(tag)
+    setSelectedAuthor('') // タグ変更時に制作者フィルタをクリア
+    setPage(1)
+  }
+
+  const handleAuthorClick = (authorName: string, event: React.MouseEvent) => {
+    event.preventDefault() // リンクのデフォルト動作を防ぐ
+    event.stopPropagation() // 親要素（Link）へのイベント伝播を阻止
+    setSelectedAuthor(authorName)
+    setSelectedTag('all') // 制作者フィルタ時にタグフィルタをクリア
+    setPage(1)
+  }
+
+  const clearFilters = () => {
+    setSelectedTag('all')
+    setSelectedAuthor('')
+    setSearchQuery('')
     setPage(1)
   }
 
@@ -173,6 +191,38 @@ export default function Home() {
               </button>
             </div>
           </div>
+
+          {/* 現在のフィルタ状態 */}
+          {(selectedAuthor || selectedTag !== 'all' || searchQuery.trim()) && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-sm font-medium text-blue-800">現在のフィルタ:</span>
+                  {selectedAuthor && (
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      制作者: {selectedAuthor}
+                    </span>
+                  )}
+                  {selectedTag !== 'all' && (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                      タグ: {selectedTag}
+                    </span>
+                  )}
+                  {searchQuery.trim() && (
+                    <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                      検索: {searchQuery}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={clearFilters}
+                  className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  フィルタをクリア
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* タグ検索 */}
           <div className="mb-8">
@@ -241,7 +291,13 @@ export default function Home() {
 
                       {/* 制作者 */}
                       <p className="text-sm text-gray-600 mb-2">
-                        制作者: {world.authorName}
+                        制作者: 
+                        <button
+                          onClick={(e) => handleAuthorClick(world.authorName, e)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline ml-1 cursor-pointer"
+                        >
+                          {world.authorName}
+                        </button>
                       </p>
 
                       {/* 定員情報 */}
