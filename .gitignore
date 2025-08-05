@@ -267,6 +267,11 @@ mock_data/
 .cache/
 .dev-cache/
 
+# Admin pages are tracked (important for security)
+# !web/pages/admin/
+# !web/components/AdminOnly.tsx
+# !web/lib/auth.ts
+
 # Translations
 *.mo
 *.pot
