@@ -266,6 +266,4 @@ export default function AdminWorlds({ session: serverSession }: AdminWorldsProps
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return await requireAdminAccess(context)
-}
+export const getServerSideProps = requireAdminAccess()

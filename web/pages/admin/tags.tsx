@@ -394,6 +394,4 @@ export default function AdminTags({ session: serverSession }: AdminTagsProps) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return await requireAdminAccess(context)
-}
+export const getServerSideProps = requireAdminAccess()

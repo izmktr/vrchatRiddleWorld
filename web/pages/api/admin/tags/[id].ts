@@ -9,14 +9,11 @@ export default async function handler(
 ) {
   try {
     // 管理者権限チェック
-    const authResult = await checkApiAdminAccess(req, res)
+    const session = await checkApiAdminAccess(req, res)
     
-    if (!authResult.isAuthenticated) {
-      return res.status(401).json({ error: 'Not authenticated' })
-    }
-    
-    if (!authResult.isAdmin) {
-      return res.status(403).json({ error: 'Insufficient permissions' })
+    // sessionがfalsy（void）の場合は既にレスポンスが送信されているので処理を終了
+    if (!session) {
+      return
     }
 
     const { id } = req.query

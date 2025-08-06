@@ -305,6 +305,4 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return await requireAdminAccess(context)
-}
+export const getServerSideProps = requireAdminAccess()

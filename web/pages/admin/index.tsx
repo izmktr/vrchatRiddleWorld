@@ -371,6 +371,4 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return await requireAdminAccess(context)
-}
+export const getServerSideProps = requireAdminAccess()

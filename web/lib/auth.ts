@@ -1,6 +1,7 @@
 import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../pages/api/auth/[...nextauth]'
+import type { NextApiRequest, NextApiResponse } from 'next'
 
 // 管理者メールアドレス（環境変数から取得）
 const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
@@ -11,6 +12,25 @@ const ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
 export function isAdmin(email: string | null | undefined): boolean {
   if (!email) return false
   return ADMIN_EMAILS.includes(email)
+}
+
+/**
+ * API用の管理者アクセスチェック
+ */
+export async function checkApiAdminAccess(req: NextApiRequest, res: NextApiResponse): Promise<any | null> {
+  const session = await getServerSession(req, res, authOptions)
+  
+  if (!session) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return null
+  }
+  
+  if (!isAdmin(session.user?.email)) {
+    res.status(403).json({ error: 'Forbidden' })
+    return null
+  }
+  
+  return session
 }
 
 /**

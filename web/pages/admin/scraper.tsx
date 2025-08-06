@@ -335,6 +335,4 @@ export default function AdminScraper({ session: serverSession }: AdminScraperPro
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  return await requireAdminAccess(context)
-}
+export const getServerSideProps = requireAdminAccess()
