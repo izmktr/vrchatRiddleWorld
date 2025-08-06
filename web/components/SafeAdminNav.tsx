@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react'
 import { useAdminMode } from '@/hooks/useAdminMode'
+import Link from 'next/link'
 
 /**
  * ハイドレーション安全な管理者ナビゲーション
@@ -36,9 +37,9 @@ export default function SafeAdminNav() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <span className="font-medium text-gray-300">管理者モード（一時的にオフ）</span>
-            <a href="/" className="text-gray-300 hover:text-white hover:underline">
+            <Link href="/" className="text-gray-300 hover:text-white hover:underline">
               トップページ
-            </a>
+            </Link>
           </div>
           <button
             onClick={toggleAdminMode}
@@ -57,24 +58,24 @@ export default function SafeAdminNav() {
         <span className="font-medium">管理者モード</span>
         <div className="flex items-center space-x-4">
           <nav className="flex space-x-4">
-            <a href="/" className="hover:underline">
+            <Link href="/" className="hover:underline">
               トップページ
-            </a>
-            <a href="/admin" className="hover:underline">
+            </Link>
+            <Link href="/admin" className="hover:underline">
               管理ダッシュボード
-            </a>
-            <a href="/admin/worlds" className="hover:underline">
+            </Link>
+            <Link href="/admin/worlds" className="hover:underline">
               ワールド管理
-            </a>
-            <a href="/admin/users" className="hover:underline">
+            </Link>
+            <Link href="/admin/users" className="hover:underline">
               ユーザー管理
-            </a>
-            <a href="/admin/scraper" className="hover:underline">
+            </Link>
+            <Link href="/admin/scraper" className="hover:underline">
               スクレイパー
-            </a>
-            <a href="/admin/tags" className="hover:underline">
+            </Link>
+            <Link href="/admin/tags" className="hover:underline">
               タグ管理
-            </a>
+            </Link>
           </nav>
           <button
             onClick={toggleAdminMode}
