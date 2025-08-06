@@ -58,6 +58,10 @@ GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
+#### 管理者設定（必須）
+```
+NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com,admin2@example.com
+```
 
 #### その他の設定
 ```

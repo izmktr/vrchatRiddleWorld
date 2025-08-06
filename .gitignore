@@ -22,6 +22,9 @@ lib64/
 # 例外: pythonプロジェクトのlibディレクトリは追跡対象
 !python/lib/
 !python/lib/*
+# 例外: webプロジェクトのlibディレクトリは追跡対象
+!web/lib/
+!web/lib/*
 parts/
 sdist/
 var/
