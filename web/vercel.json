@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "name": "vrchat-riddle-world",
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm run install",
-  "framework": "nextjs"
-}
