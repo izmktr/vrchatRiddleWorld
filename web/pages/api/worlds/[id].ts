@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,6 +18,23 @@ export default async function handler(
 
       if (!world) {
         return res.status(404).json({ error: 'World not found' })
+      }
+
+      // システムタグ情報を取得
+      const worldTagsCollection = db.collection('worlds_tag')
+      const systemTagsCollection = db.collection('system_taglist')
+      
+      const worldTags = await worldTagsCollection
+        .find({ worldId: id })
+        .toArray()
+      
+      const tagIds = worldTags.map(wt => wt.tagId)
+      let systemTags: any[] = []
+      
+      if (tagIds.length > 0) {
+        systemTags = await systemTagsCollection
+          .find({ _id: { $in: tagIds.map(id => typeof id === 'string' ? new ObjectId(id) : id) } })
+          .toArray()
       }
 
       // 日付フィールドの安全な処理
@@ -39,7 +57,13 @@ export default async function handler(
         thumbnailImageUrl: world.thumbnailImageUrl || '',
         authorName: world.authorName || '',
         authorId: world.authorId || '',
-        tags: world.tags || [],
+        tags: world.tags || [], // VRC由来のタグ（後方互換性のため残す）
+        systemTags: systemTags.map(tag => ({
+          _id: tag._id,
+          tagName: tag.tagName,
+          tagDescription: tag.tagDescription,
+          priority: tag.priority
+        })),
         created_at: getValidDate(world.created_at),
         updated_at: getValidDate(world.updated_at),
         description: world.description || '',

@@ -311,6 +311,28 @@ export default function Home() {
                         </div>
                       </div>
 
+                      {/* システムタグ */}
+                      {world.systemTags && world.systemTags.length > 0 && (
+                        <div className="mb-3">
+                          <div className="flex flex-wrap gap-1">
+                            {world.systemTags.slice(0, 3).map((tag) => (
+                              <span 
+                                key={tag._id}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                                title={tag.tagDescription}
+                              >
+                                {tag.tagName}
+                              </span>
+                            ))}
+                            {world.systemTags.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                +{world.systemTags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* 説明 */}
                       <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                         {world.description || '説明がありません'}

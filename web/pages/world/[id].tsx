@@ -8,6 +8,13 @@ import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import ImageWithFallback from '../../components/ImageWithFallback'
 
+interface SystemTag {
+  _id: string
+  tagName: string
+  tagDescription: string
+  priority: number
+}
+
 interface WorldDetail {
   id: string
   name: string
@@ -15,7 +22,8 @@ interface WorldDetail {
   thumbnailImageUrl?: string
   authorName: string
   authorId: string
-  tags: string[]
+  tags: string[] // VRC由来のタグ（後方互換性）
+  systemTags?: SystemTag[] // システムタグ
   created_at: string
   updated_at: string
   description: string
@@ -223,20 +231,43 @@ export default function WorldDetail() {
                 <p className="text-gray-700 whitespace-pre-wrap">{world.description}</p>
               </div>
 
-              {/* タグ */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-4">タグ</h2>
-                <div className="flex flex-wrap gap-2">
-                  {world.tags
-                    .map((tag: string) => processTag(tag))
-                    .filter((tag): tag is string => tag !== null)
-                    .map((displayTag: string, index: number) => (
-                      <span key={index} className="tag">
-                        {displayTag}
+              {/* システムタグ */}
+              {world.systemTags && world.systemTags.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold mb-4">カテゴリ</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {world.systemTags.map((tag: SystemTag) => (
+                      <span 
+                        key={tag._id} 
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors"
+                        title={tag.tagDescription}
+                      >
+                        {tag.tagName}
                       </span>
                     ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* VRC由来のタグ（古いデータとの互換性） */}
+              {world.tags && world.tags.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold mb-4">VRCタグ</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {world.tags
+                      .map((tag: string) => processTag(tag))
+                      .filter((tag): tag is string => tag !== null)
+                      .map((displayTag: string, index: number) => (
+                        <span 
+                          key={index} 
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                        >
+                          {displayTag}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* 日付情報 */}
               <div className="mb-8">
