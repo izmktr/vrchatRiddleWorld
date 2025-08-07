@@ -8,13 +8,20 @@ import { ja } from 'date-fns/locale'
 import ImageWithFallback from '../components/ImageWithFallback'
 import Header from '../components/Header'
 
+interface SystemTag {
+  _id: string
+  tagName: string
+  tagDescription: string
+}
+
 interface World {
   id: string
   name: string
   imageUrl?: string
   thumbnailImageUrl?: string
   authorName: string
-  tags: string[]
+  tags: string[] // システムタグ名の配列
+  systemTags?: SystemTag[] // システムタグの詳細情報
   created_at: string
   updated_at: string
   description: string
@@ -25,10 +32,11 @@ interface World {
 }
 
 interface Tag {
-  name: string
-  count: number
-  displayName?: string
-  originalName?: string
+  _id: string
+  tagName: string
+  tagDescription: string
+  priority: number
+  count?: number
 }
 
 export default function Home() {
@@ -42,17 +50,13 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(0)
   const [searchQuery, setSearchQuery] = useState<string>('')
 
-  // タグの処理関数
-  const processTag = (tag: string): string | null => {
-    // system_approvedは非表示
-    if (tag === 'system_approved') {
-      return null;
-    }
-    // author_tag_で始まる場合はプレフィックスを削除
-    if (tag.startsWith('author_tag_')) {
-      return tag.replace('author_tag_', '');
-    }
-    return tag;
+  // タグの処理関数（不要になったため削除）
+
+  // 選択されたタグの名前を取得する関数
+  const getSelectedTagName = (): string => {
+    if (selectedTag === 'all') return ''
+    const tag = tags.find(tag => tag._id === selectedTag)
+    return tag ? tag.tagName : selectedTag
   }
 
   // 安全な日付フォーマット関数
@@ -77,19 +81,16 @@ export default function Home() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch('/api/tags')
+      const response = await fetch('/api/admin/tags')
+      if (!response.ok) {
+        throw new Error('Failed to fetch tags')
+      }
       const data = await response.json()
-      // system_approvedを除外してタグを処理
-      const filteredTags = data
-        .filter((tag: Tag) => tag.name !== 'system_approved')
-        .map((tag: Tag) => ({
-          ...tag,
-          displayName: processTag(tag.name) || tag.name,
-          originalName: tag.name
-        }))
-      setTags(filteredTags)
+      // システムタグをそのまま設定
+      setTags(data.tags || [])
     } catch (error) {
       console.error('Error fetching tags:', error)
+      setTags([])
     }
   }
 
@@ -205,7 +206,7 @@ export default function Home() {
                   )}
                   {selectedTag !== 'all' && (
                     <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                      タグ: {selectedTag}
+                      タグ: {getSelectedTagName()}
                     </span>
                   )}
                   {searchQuery.trim() && (
@@ -240,15 +241,15 @@ export default function Home() {
               </button>
               {tags.map((tag) => (
                 <button
-                  key={tag.originalName || tag.name}
-                  onClick={() => handleTagChange(tag.originalName || tag.name)}
+                  key={tag._id}
+                  onClick={() => handleTagChange(tag._id)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedTag === (tag.originalName || tag.name)
+                    selectedTag === tag._id
                       ? 'bg-vrchat-secondary text-white'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  {tag.displayName || tag.name} ({tag.count})
+                  {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
                 </button>
               ))}
             </div>

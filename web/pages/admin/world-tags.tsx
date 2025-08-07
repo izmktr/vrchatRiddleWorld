@@ -19,6 +19,14 @@ interface World {
   visits: number
   favorites: number
   tagCount: number
+  tags?: WorldTagSummary[]
+}
+
+interface WorldTagSummary {
+  tagId: string
+  tagName: string
+  tagDescription: string
+  assignedAt: string
 }
 
 interface SystemTag {
@@ -54,13 +62,15 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
   const [totalPages, setTotalPages] = useState(1)
   const [showTagModal, setShowTagModal] = useState(false)
 
+  const pagesize = 30 // 1ページあたりのワールド数
+
   // ワールド一覧を取得
   const fetchWorlds = async (page: number = 1, search: string = '') => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '12'
+        limit: pagesize.toString()
       })
       if (search) params.append('search', search)
 
@@ -252,10 +262,28 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
                             {world.name}
                           </p>
                           <div className="ml-4 flex items-center space-x-2">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                              <TagIcon className="h-3 w-3 mr-1" />
-                              {world.tagCount}個のタグ
-                            </span>
+                            {world.tags && world.tags.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {world.tags.slice(0, 3).map((tag) => (
+                                  <span
+                                    key={tag.tagId}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                                  >
+                                    {tag.tagName}
+                                  </span>
+                                ))}
+                                {world.tags.length > 3 && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    +{world.tags.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                <TagIcon className="h-3 w-3 mr-1" />
+                                タグなし
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="mt-1">
@@ -305,9 +333,9 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
-                      <span className="font-medium">{((currentPage - 1) * 12) + 1}</span>
+                      <span className="font-medium">{((currentPage - 1) * pagesize) + 1}</span>
                       {' - '}
-                      <span className="font-medium">{Math.min(currentPage * 12, worlds.length)}</span>
+                      <span className="font-medium">{Math.min(currentPage * pagesize, worlds.length)}</span>
                       {' / '}
                       <span className="font-medium">{worlds.length}</span>
                       件を表示

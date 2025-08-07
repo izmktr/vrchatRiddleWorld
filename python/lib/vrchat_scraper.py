@@ -6,7 +6,7 @@ import os
 import json
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -45,8 +45,8 @@ class VRChatWorldScraper:
             
             world_data = response.json()
             
-            # 追加情報を付与
-            world_data['scraped_at'] = datetime.now().isoformat()
+            # 追加情報を付与 (UTCでタイムスタンプを記録)
+            world_data['scraped_at'] = datetime.now(timezone.utc).isoformat()
             world_data['source_url'] = url
             world_data['_from_cache'] = False  # 新規取得データ
             
@@ -131,21 +131,34 @@ class VRChatWorldScraper:
             if not updated_at_str:
                 return None
 
-            # 日付を比較（1日以内かチェック）
+            # 日付を比較（1日以内かチェック）。タイムゾーンを考慮して比較。
             scraped_at = datetime.fromisoformat(scraped_at_str.replace('Z', '+00:00'))
-            now = datetime.now().replace(tzinfo=scraped_at.tzinfo)  # 同じタイムゾーンに合わせる
-            time_diff = now - scraped_at
+            now_utc = datetime.now(timezone.utc)
+            time_diff = now_utc - scraped_at
 
-            updated_at = datetime.fromisoformat(updated_at_str.replace('Z', '+00:00'))
-            update_diff = scraped_at - updated_at
+            # updated_atをタイムゾーン対応で処理
+#            try:
+#                if updated_at_str.endswith('Z'):
+#                    updated_at = datetime.fromisoformat(updated_at_str.replace('Z', '+00:00'))
+#                elif '+' in updated_at_str or updated_at_str.count('-') > 2:  # タイムゾーン情報あり
+#                    updated_at = datetime.fromisoformat(updated_at_str)
+#                else:
+#                   # タイムゾーン情報がない場合はUTCとして扱う
+#                    updated_at = datetime.fromisoformat(updated_at_str).replace(tzinfo=timezone.utc)
+#            except ValueError:
+#                # ISO形式でない場合はスキップ
+#                logger.warning(f"⚠️  日付形式が不正: {updated_at_str}")
+#                return None
+            
+#            update_diff = scraped_at - updated_at
             
             # 1日（24時間）以内なら既存データを返す
             if time_diff.total_seconds() < 86400:  # 86400秒 = 24時間
                 return raw_data.get('raw_data', {})
             
             # ワールドの更新からの日付に応じて、更新間隔を開ける
-            if time_diff.total_seconds() < update_diff.total_seconds() / 7:
-                return raw_data.get('raw_data', {})
+#            if time_diff.total_seconds() < update_diff.total_seconds() / 7:
+ #               return raw_data.get('raw_data', {})
             
             return None
             

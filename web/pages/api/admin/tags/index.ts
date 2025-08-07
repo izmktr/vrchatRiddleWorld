@@ -37,7 +37,21 @@ export default async function handler(
           .sort({ priority: 1, tagName: 1 })
           .toArray()
         
-        res.status(200).json({ tags })
+        // 各タグの使用数を取得
+        const worldTagsCollection = db.collection('worlds_tag')
+        const tagsWithCount = await Promise.all(
+          tags.map(async (tag) => {
+            const count = await worldTagsCollection.countDocuments({ 
+              tagId: tag._id.toString() 
+            })
+            return {
+              ...tag,
+              count
+            }
+          })
+        )
+        
+        res.status(200).json({ tags: tagsWithCount })
         break
 
       case 'POST':

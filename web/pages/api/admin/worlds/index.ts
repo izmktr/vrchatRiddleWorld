@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
 import { checkApiAdminAccess } from '@/lib/auth'
+import { ObjectId } from 'mongodb'
 
 export default async function handler(
   req: NextApiRequest,
@@ -61,16 +62,46 @@ export default async function handler(
       })
       .toArray()
 
-    // 各ワールドに付与されているタグ数を取得
+    // 各ワールドに付与されているタグ情報を取得
     const worldTagsCollection = db.collection('worlds_tag')
-    const worldsWithTagCounts = await Promise.all(
+    const systemTagsCollection = db.collection('system_taglist') // 修正: system_tags -> system_taglist
+    const worldsWithTags = await Promise.all(
       worlds.map(async (world) => {
-        const tagCount = await worldTagsCollection.countDocuments({ 
-          worldId: world.world_id 
+        // ワールドに付与されているタグを取得
+        const worldTags = await worldTagsCollection
+          .find({ worldId: world.world_id })
+          .toArray()
+
+        console.log(`World ${world.name} has ${worldTags.length} tags:`, worldTags.map(wt => ({ tagId: wt.tagId, tagIdType: typeof wt.tagId })))
+
+        // タグの詳細情報を取得
+        const tagIds = worldTags.map(wt => wt.tagId)
+        
+        // タグIDの形式をログ出力
+        console.log('Tag IDs:', tagIds)
+        console.log('Tag IDs converted:', tagIds.map(id => typeof id === 'string' ? new ObjectId(id) : id))
+
+        const tagDetails = await systemTagsCollection
+          .find({ _id: { $in: tagIds.map(id => typeof id === 'string' ? new ObjectId(id) : id) } })
+          .toArray()
+
+        console.log('Found tag details:', tagDetails.map(td => ({ _id: td._id, tagName: td.tagName })))
+
+        const tags = worldTags.map(wt => {
+          const tagInfo = tagDetails.find(td => td._id.toString() === wt.tagId.toString())
+          console.log(`Tag mapping: ${wt.tagId} -> ${tagInfo?.tagName || 'Unknown'}`)
+          return {
+            tagId: wt.tagId,
+            tagName: tagInfo?.tagName || 'Unknown',
+            tagDescription: tagInfo?.tagDescription || '',
+            assignedAt: wt.assignedAt
+          }
         })
+
         return {
           ...world,
-          tagCount
+          tagCount: worldTags.length,
+          tags
         }
       })
     )
@@ -79,7 +110,7 @@ export default async function handler(
     const total = await worldsCollection.countDocuments(query)
 
     res.status(200).json({
-      worlds: worldsWithTagCounts,
+      worlds: worldsWithTags,
       pagination: {
         current: pageNumber,
         total: Math.ceil(total / limitNumber),

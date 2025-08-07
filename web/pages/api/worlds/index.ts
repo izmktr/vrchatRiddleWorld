@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,9 +18,21 @@ export default async function handler(
       // クエリ条件を構築
       let query: any = {}
       
-      // タグでフィルタリング
+      // タグでフィルタリング（システムタグ対応）
       if (tag && tag !== 'all') {
-        query.tags = { $in: [tag] }
+        // システムタグでフィルタリングする場合、worlds_tagコレクションを使用
+        const worldTagsCollection = db.collection('worlds_tag')
+        const worldsWithTag = await worldTagsCollection
+          .find({ tagId: tag })
+          .toArray()
+        
+        const worldIds = worldsWithTag.map(wt => wt.worldId)
+        if (worldIds.length > 0) {
+          query.world_id = { $in: worldIds }
+        } else {
+          // 該当するワールドがない場合
+          query.world_id = { $in: [] }
+        }
       }
       
       // 制作者でフィルタリング
@@ -56,7 +69,10 @@ export default async function handler(
       }
 
       // データをフロントエンド用に変換
-      const formattedWorlds = worlds.map((world, index) => {
+      const worldTagsCollection = db.collection('worlds_tag')
+      const systemTagsCollection = db.collection('system_taglist')
+      
+      const formattedWorlds = await Promise.all(worlds.map(async (world, index) => {
         try {
           // 日付フィールドの安全な処理
           const getValidDate = (dateString: any): string => {
@@ -70,13 +86,32 @@ export default async function handler(
             }
           }
 
+          // 各ワールドのシステムタグを取得
+          const worldTags = await worldTagsCollection
+            .find({ worldId: world.world_id || world.id })
+            .toArray()
+          
+          const tagIds = worldTags.map(wt => wt.tagId)
+          let systemTags: any[] = []
+          
+          if (tagIds.length > 0) {
+            systemTags = await systemTagsCollection
+              .find({ _id: { $in: tagIds.map(id => typeof id === 'string' ? new ObjectId(id) : id) } })
+              .toArray()
+          }
+
           return {
             id: world.world_id || world.id, // world_idまたはidを使用
             name: world.name || '',
             imageUrl: world.imageUrl || '',
             thumbnailImageUrl: world.thumbnailImageUrl || '',
             authorName: world.authorName || '',
-            tags: world.tags || [],
+            tags: systemTags.map(tag => tag.tagName), // システムタグ名を配列で返す
+            systemTags: systemTags.map(tag => ({
+              _id: tag._id,
+              tagName: tag.tagName,
+              tagDescription: tag.tagDescription
+            })),
             created_at: getValidDate(world.created_at),
             updated_at: getValidDate(world.updated_at),
             description: world.description || '',
@@ -96,6 +131,7 @@ export default async function handler(
             thumbnailImageUrl: '',
             authorName: '',
             tags: [],
+            systemTags: [],
             created_at: '',
             updated_at: '',
             description: 'データ処理エラー',
@@ -107,7 +143,7 @@ export default async function handler(
             releaseStatus: 'unknown'
           }
         }
-      })
+      }))
 
       res.status(200).json({
         worlds: formattedWorlds,
