@@ -37,7 +37,12 @@ export const authOptions: NextAuthOptions = {
       return token
     },
   },
+  session: {
+    strategy: 'jwt', // Vercelでの安定性向上
+    maxAge: 30 * 24 * 60 * 60, // 30日
+  },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 }
 
 export default NextAuth(authOptions)

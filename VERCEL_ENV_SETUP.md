@@ -4,6 +4,21 @@ Vercelでデプロイする際は、以下の環境変数をVercelのダッシ�
 
 ## 必須環境変数
 
+### MongoDB設定
+```
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/
+MONGODB_DB_NAME=vrcworld
+```
+
+### NextAuth.js設定
+```
+NEXTAUTH_URL=https://your-app-name.vercel.app
+NEXTAUTH_SECRET=your-random-secret-string
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+ADMIN_EMAILS=admin1@example.com,admin2@example.com
+```
+
 ### Firebase Admin SDK設定
 ```
 FIREBASE_PROJECT_ID=your-firebase-project-id
@@ -35,6 +50,27 @@ PYTHON_VERSION=3.9
 2. プロジェクト設定 > サービスアカウント
 3. "新しい秘密鍵の生成" をクリック
 4. ダウンロードしたJSONファイルから各値をコピーして環境変数に設定
+
+## MongoDB設定の取得方法
+
+1. MongoDB Atlas (https://cloud.mongodb.com/) にアクセス
+2. Database > Connect > Drivers
+3. 接続文字列をコピーしてMONGODB_URIに設定
+4. データベース名をMONGODB_DB_NAMEに設定
+
+## Google OAuth設定の取得方法
+
+1. Google Cloud Console (https://console.cloud.google.com/) にアクセス
+2. APIs & Services > Credentials
+3. OAuth 2.0 クライアント ID を作成
+4. 承認済みリダイレクト URI に `https://your-app-name.vercel.app/api/auth/callback/google` を追加
+5. クライアントIDとクライアントシークレットを環境変数に設定
+
+## NEXTAUTH_SECRET生成方法
+
+```bash
+openssl rand -base64 32
+```
 
 ## 注意事項
 

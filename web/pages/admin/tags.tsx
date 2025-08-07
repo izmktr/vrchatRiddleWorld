@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { requireAdminAccess } from '@/lib/auth'
+import { useAdminAuth } from '@/hooks/useAdminAuth'
 
 interface SystemTag {
   _id: string
@@ -19,8 +20,8 @@ interface AdminTagsProps {
 }
 
 export default function AdminTags({ session: serverSession }: AdminTagsProps) {
-  const { data: clientSession } = useSession()
-  const session = clientSession || serverSession
+  const { isAdmin, isLoading, session } = useAdminAuth()
+  const finalSession = session || serverSession
   
   const [tags, setTags] = useState<SystemTag[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,8 +36,40 @@ export default function AdminTags({ session: serverSession }: AdminTagsProps) {
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
-    fetchTags()
-  }, [])
+    // セッション情報をデバッグ出力
+    console.log('Current session:', finalSession)
+    console.log('Is admin:', finalSession?.user?.isAdmin)
+    console.log('User email:', finalSession?.user?.email)
+    console.log('Admin emails env:', process.env.ADMIN_EMAILS)
+    
+    if (!isLoading && isAdmin) {
+      fetchTags()
+    }
+  }, [isLoading, isAdmin])
+
+  // ローディング中または認証チェック中
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // 管理者権限がない場合（フックが自動でリダイレクトするが、念のため）
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">アクセスが拒否されました</h1>
+          <p className="text-gray-600 mb-4">管理者権限が必要です</p>
+          <Link href="/" className="btn-primary">
+            ホームに戻る
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const fetchTags = async () => {
     try {
