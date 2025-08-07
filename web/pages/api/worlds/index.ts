@@ -8,7 +8,7 @@ export default async function handler(
 ) {
   try {
     if (req.method === 'GET') {
-      const { page = 1, limit = 12, tag, search, author } = req.query
+  const { page = 1, limit = 12, tag, search, author, sort = 'updated_at' } = req.query
       
       // MongoDB接続
       const client = await clientPromise
@@ -55,10 +55,16 @@ export default async function handler(
       // ページネーション
       const skip = (Number(page) - 1) * Number(limit)
       
-      // データを取得（更新日時でソート）
+      // ソート条件を決定
+      let sortOption: any = { updated_at: -1 }
+      if (sort === 'created_at') sortOption = { created_at: -1 }
+      if (sort === 'visits') sortOption = { visits: -1 }
+      if (sort === 'favorites') sortOption = { favorites: -1 }
+
+      // データを取得
       const worlds = await collection
         .find(query)
-        .sort({ updated_at: -1 })
+        .sort(sortOption)
         .skip(skip)
         .limit(Number(limit))
         .toArray()
@@ -120,7 +126,8 @@ export default async function handler(
             popularity: world.popularity || 0,
             capacity: world.capacity || 0,
             recommendedCapacity: world.recommendedCapacity || 0,
-            releaseStatus: world.releaseStatus || 'unknown'
+            releaseStatus: world.releaseStatus || 'unknown',
+            source_url: world.source_url || ''
           }
         } catch (worldError) {
           console.error(`Error processing world ${index}:`, worldError, 'World data:', world)

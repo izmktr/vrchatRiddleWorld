@@ -29,6 +29,7 @@ interface World {
   favorites: number
   capacity?: number
   recommendedCapacity?: number
+  source_url?: string
 }
 
 interface Tag {
@@ -49,6 +50,9 @@ export default function Home() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [searchQuery, setSearchQuery] = useState<string>('')
+
+  // ソート状態
+  const [sortKey, setSortKey] = useState<'updated_at' | 'created_at' | 'visits' | 'favorites'>('created_at')
 
   // タグの処理関数（不要になったため削除）
 
@@ -77,7 +81,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchWorlds()
-  }, [selectedTag, page, searchQuery, selectedAuthor])
+  }, [selectedTag, page, searchQuery, selectedAuthor, sortKey])
 
   const fetchTags = async () => {
     try {
@@ -100,6 +104,7 @@ export default function Home() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '12',
+        sort: sortKey,
         ...(selectedTag !== 'all' && { tag: selectedTag }),
         ...(searchQuery.trim() && { search: searchQuery.trim() }),
         ...(selectedAuthor.trim() && { author: selectedAuthor.trim() })
@@ -156,6 +161,11 @@ export default function Home() {
     if (e.key === 'Enter') {
       handleSearch()
     }
+  }
+
+  const handleSortChange = (key: 'updated_at' | 'created_at' | 'visits' | 'favorites') => {
+    setSortKey(key)
+    setPage(1)
   }
 
   return (
@@ -255,6 +265,35 @@ export default function Home() {
             </div>
           </div>
 
+          {/* ソートボタン */}
+          <div className="mb-4 flex gap-2 items-center">
+            <span className="text-sm text-gray-600">並び替え:</span>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'created_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('created_at')}
+            >
+              公開日
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'updated_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('updated_at')}
+            >
+              更新日
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'visits' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('visits')}
+            >
+              訪問者数
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'favorites' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('favorites')}
+            >
+              お気に入り数
+            </button>
+          </div>
+
           {/* ワールド一覧 */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -290,24 +329,34 @@ export default function Home() {
                         {world.name}
                       </h3>
 
-                      {/* 制作者 */}
-                      <p className="text-sm text-gray-600 mb-2">
-                        制作者: 
-                        <button
-                          onClick={(e) => handleAuthorClick(world.authorName, e)}
-                          className="text-blue-600 hover:text-blue-800 hover:underline ml-1 cursor-pointer"
-                        >
-                          {world.authorName}
-                        </button>
-                      </p>
-
-                      {/* 定員情報 */}
-                      <div className="flex gap-4 mb-3 text-sm text-gray-700">
-                        <div>
-                          <span className="font-medium">定員:</span> {world.capacity || '不明'}
+                      {/* 制作者と基本情報 */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 text-sm">
+                        <div className="text-gray-600">
+                          制作者: 
+                          <button
+                            onClick={(e) => handleAuthorClick(world.authorName, e)}
+                            className="text-blue-600 hover:text-blue-800 hover:underline ml-1 cursor-pointer"
+                          >
+                            {world.authorName}
+                          </button>
                         </div>
-                        <div>
-                          <span className="font-medium">推奨:</span> {world.recommendedCapacity || '不明'}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center text-gray-600">
+                            <span className="mr-1">👥</span>
+                            <span>{world.recommendedCapacity || '?'}/{world.capacity || '?'}</span>
+                          </div>
+                          {world.source_url && (
+                            <a 
+                              href={world.source_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                              title="VRChatで開く"
+                            >
+                              <span className="text-sm">🔗</span>
+                            </a>
+                          )}
                         </div>
                       </div>
 
@@ -339,13 +388,21 @@ export default function Home() {
                       </p>
 
                       {/* 日付 */}
-                      <div className="text-xs text-gray-500">
-                        <div>
-                          公開日: {formatSafeDate(world.created_at)}
+                        <div className="text-xs text-gray-500">
+                        <div className="flex gap-4">
+                          <span>公開日: {formatSafeDate(world.created_at)}</span>
+                          <span>更新日: {formatSafeDate(world.updated_at)}</span>
                         </div>
-                        <div>
-                          更新日: {formatSafeDate(world.updated_at)}
                         </div>
+
+                      {/* 訪問者数・お気に入り数 */}
+                      <div className="flex items-center gap-4 text-xs text-gray-600 mb-2">
+                        <span title="訪問者数" className="flex items-center">
+                          <span className="mr-1">👁</span>{world.visits?.toLocaleString?.() ?? world.visits ?? 0}
+                        </span>
+                        <span title="お気に入り数" className="flex items-center">
+                          <span className="mr-1">★</span>{world.favorites?.toLocaleString?.() ?? world.favorites ?? 0}
+                        </span>
                       </div>
                     </div>
                   </Link>

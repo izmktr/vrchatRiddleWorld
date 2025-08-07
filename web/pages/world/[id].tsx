@@ -168,6 +168,76 @@ export default function WorldDetail() {
                 {world.name}
               </h1>
 
+              {/* 制作者と基本情報 */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <span className="font-medium">制作者:</span>
+                  <span className="ml-2 text-gray-900">{world.authorName}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="mr-1">👥</span>
+                  <span>{world.recommendedCapacity}/{world.capacity}</span>
+                </div>
+                {world.source_url && (
+                  <div className="flex items-center">
+                    <a 
+                      href={world.source_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                      title="VRChatで開く"
+                    >
+                      <span className="mr-1">🔗</span>
+                      <span>VRChat</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* 説明 */}
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-4">説明</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{world.description}</p>
+              </div>
+
+              {/* システムタグ */}
+              {world.systemTags && world.systemTags.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold mb-4">カテゴリ</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {world.systemTags.map((tag: SystemTag) => (
+                      <span 
+                        key={tag._id} 
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors"
+                        title={tag.tagDescription}
+                      >
+                        {tag.tagName}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* VRC由来のタグ（古いデータとの互換性） */}
+              {world.tags && world.tags.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold mb-4">VRCタグ</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {world.tags
+                      .map((tag: string) => processTag(tag))
+                      .filter((tag): tag is string => tag !== null)
+                      .map((displayTag: string, index: number) => (
+                        <span 
+                          key={index} 
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                        >
+                          {displayTag}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               {/* 基本情報 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
@@ -215,59 +285,9 @@ export default function WorldDetail() {
                       <dt className="text-sm font-medium text-gray-500">ヒート値</dt>
                       <dd className="text-sm text-gray-900">{world.heat}</dd>
                     </div>
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">定員</dt>
-                      <dd className="text-sm text-gray-900">
-                        {world.capacity}人 (推奨: {world.recommendedCapacity}人)
-                      </dd>
-                    </div>
                   </dl>
                 </div>
               </div>
-
-              {/* 説明 */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-4">説明</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">{world.description}</p>
-              </div>
-
-              {/* システムタグ */}
-              {world.systemTags && world.systemTags.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-lg font-semibold mb-4">カテゴリ</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {world.systemTags.map((tag: SystemTag) => (
-                      <span 
-                        key={tag._id} 
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors"
-                        title={tag.tagDescription}
-                      >
-                        {tag.tagName}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* VRC由来のタグ（古いデータとの互換性） */}
-              {world.tags && world.tags.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-lg font-semibold mb-4">VRCタグ</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {world.tags
-                      .map((tag: string) => processTag(tag))
-                      .filter((tag): tag is string => tag !== null)
-                      .map((displayTag: string, index: number) => (
-                        <span 
-                          key={index} 
-                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"
-                        >
-                          {displayTag}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              )}
 
               {/* 日付情報 */}
               <div className="mb-8">
