@@ -7,7 +7,7 @@ import { useAdminMode } from '@/hooks/useAdminMode'
 
 export default function Header() {
   const { data: session, status } = useSession()
-  const { isActualAdmin, isAdminModeActive } = useAdminMode()
+  const { isActualAdmin, isAdminModeActive, isAdminModeDisabled, toggleAdminMode } = useAdminMode()
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -141,6 +141,26 @@ export default function Header() {
                                 <span className="text-base">🏷️</span>
                                 <span>タグ管理</span>
                               </Link>
+                            )}
+                          </Menu.Item>
+                          <div className="border-b border-gray-100 my-1"></div>
+                        </>
+                      )}
+
+                      {/* 管理者モードがオフの場合の復帰ボタン */}
+                      {isActualAdmin && isAdminModeDisabled && (
+                        <>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <button
+                                onClick={toggleAdminMode}
+                                className={`${
+                                  active ? 'bg-green-50' : ''
+                                } flex items-center space-x-2 px-4 py-2 text-sm text-green-600 hover:text-green-700 w-full text-left`}
+                              >
+                                <span className="text-base">🔓</span>
+                                <span>管理者モードに戻る</span>
+                              </button>
                             )}
                           </Menu.Item>
                           <div className="border-b border-gray-100 my-1"></div>

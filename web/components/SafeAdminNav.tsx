@@ -30,26 +30,9 @@ export default function SafeAdminNav() {
     return null
   }
 
-  // 管理者だが一時的にオフにしている場合は、復帰ボタンのみ表示
+  // 管理者だが一時的にオフにしている場合は、バナーを非表示
   if (isAdminModeDisabled) {
-    return (
-      <div className="bg-gray-600 text-white px-4 py-2 text-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span className="font-medium text-gray-300">管理者モード（一時的にオフ）</span>
-            <Link href="/" className="text-gray-300 hover:text-white hover:underline">
-              トップページ
-            </Link>
-          </div>
-          <button
-            onClick={toggleAdminMode}
-            className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium transition-colors"
-          >
-            管理者モードに戻る
-          </button>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
