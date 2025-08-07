@@ -266,7 +266,7 @@ export default function Home() {
                   <Link key={world.id} href={`/world/${world.id}`}>
                     <div className="card p-6 cursor-pointer">
                       {/* サムネイル */}
-                      <div className="relative h-48 mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                      <div className="relative h-48 mb-4 rounded-lg overflow-hidden">
                         {world.thumbnailImageUrl ? (
                           <ImageWithFallback
                             src={world.thumbnailImageUrl}
@@ -275,7 +275,7 @@ export default function Home() {
                             className="object-cover"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full text-gray-500">
+                          <div className="flex items-center justify-center h-full text-gray-500 bg-gray-200">
                             <div className="text-center">
                               <div className="text-4xl mb-2">🖼️</div>
                               <div className="text-sm">画像なし</div>

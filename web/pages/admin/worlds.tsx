@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { requireAdminAccess } from '@/lib/auth'
+import ImageWithFallback from '@/components/ImageWithFallback'
 
 interface World {
   id: string
@@ -190,11 +191,12 @@ export default function AdminWorlds({ session: serverSession }: AdminWorldsProps
                           type="checkbox"
                           className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                         />
-                        <div className="flex-shrink-0">
-                          <img
+                        <div className="flex-shrink-0 relative h-16 w-16">
+                          <ImageWithFallback
                             src={world.imageUrl || '/placeholder-world.jpg'}
                             alt={world.name}
-                            className="h-16 w-16 rounded-lg object-cover"
+                            fill
+                            className="rounded-lg object-cover"
                           />
                         </div>
                         <div className="flex-grow min-w-0">
