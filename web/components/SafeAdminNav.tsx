@@ -59,6 +59,9 @@ export default function SafeAdminNav() {
             <Link href="/admin/tags" className="hover:underline">
               タグ管理
             </Link>
+            <Link href="/admin/world-tags" className="hover:underline">
+              ワールドタグ管理
+            </Link>
           </nav>
           <button
             onClick={toggleAdminMode}

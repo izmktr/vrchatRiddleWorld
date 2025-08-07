@@ -21,18 +21,24 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   const [imgSrc, setImgSrc] = useState(src)
   const [hasError, setHasError] = useState(false)
-  const [useDirectImage, setUseDirectImage] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // VRChatの画像URLかどうかチェック
+  const needsProxy = src.includes('vrchat.com') || src.includes('vrcimg.com') || src.includes('api.vrchat.cloud')
+  
+  // プロキシが必要な場合はプロキシ経由のURLを使用
+  const imageUrl = needsProxy 
+    ? `/api/proxy-image?url=${encodeURIComponent(src)}`
+    : src
 
   const handleError = () => {
-    if (!useDirectImage && src.includes('api.vrchat.cloud')) {
-      // VRChat APIの場合、Next.jsの画像最適化を迂回して直接表示を試す
-      setUseDirectImage(true)
-      setImgSrc(src) // 元のURLに戻す
-    } else {
-      setHasError(true)
-      // フォールバック画像のURL
-      setImgSrc('https://via.placeholder.com/256x256/e5e7eb/6b7280?text=No+Image')
-    }
+    console.warn(`Failed to load image: ${src}`)
+    setHasError(true)
+    setIsLoading(false)
+  }
+
+  const handleLoad = () => {
+    setIsLoading(false)
   }
 
   if (hasError) {
@@ -46,33 +52,26 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     )
   }
 
-  // VRChat APIで直接画像表示を使用する場合
-  if (useDirectImage) {
-    return (
-      <img
-        src={imgSrc}
+  return (
+    <div className="relative">
+      {isLoading && (
+        <div className={`absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center ${className}`}>
+          <span className="text-gray-400 text-xs">Loading...</span>
+        </div>
+      )}
+      <Image
+        src={imageUrl}
         alt={alt}
-        className={className}
-        onError={handleError}
-        style={fill ? { width: '100%', height: '100%', objectFit: 'cover' } : undefined}
+        fill={fill}
         width={width}
         height={height}
+        className={className}
+        onError={handleError}
+        onLoad={handleLoad}
+        unoptimized={needsProxy} // プロキシ経由の場合は最適化を無効化
+        {...props}
       />
-    )
-  }
-
-  return (
-    <Image
-      src={imgSrc}
-      alt={alt}
-      fill={fill}
-      width={width}
-      height={height}
-      className={className}
-      onError={handleError}
-      unoptimized={src.includes('api.vrchat.cloud')} // VRChat APIの場合は最適化を無効化
-      {...props}
-    />
+    </div>
   )
 }
 

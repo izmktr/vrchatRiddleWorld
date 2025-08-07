@@ -28,6 +28,7 @@ const nextConfig = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+    NEXT_PUBLIC_ADMIN_EMAILS: process.env.NEXT_PUBLIC_ADMIN_EMAILS,
   },
 }
 

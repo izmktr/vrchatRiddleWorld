@@ -320,6 +320,22 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
                   </div>
                 </Link>
 
+                <Link href="/admin/world-tags" className="group">
+                  <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
+                    <div className="flex items-center">
+                      <div className="text-2xl mr-4">🌍🏷️</div>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
+                          ワールドタグ管理
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          ワールドにシステムタグを付与・削除
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
                 <Link href="/admin/backup" className="group">
                   <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
                     <div className="flex items-center">

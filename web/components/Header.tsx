@@ -143,6 +143,19 @@ export default function Header() {
                               </Link>
                             )}
                           </Menu.Item>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                href="/admin/world-tags"
+                                className={`${
+                                  active ? 'bg-red-50' : ''
+                                } flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:text-red-700`}
+                              >
+                                <span className="text-base">🏷️</span>
+                                <span>ワールドタグ管理</span>
+                              </Link>
+                            )}
+                          </Menu.Item>
                           <div className="border-b border-gray-100 my-1"></div>
                         </>
                       )}
