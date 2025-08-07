@@ -81,7 +81,7 @@ export default function Home() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch('/api/admin/tags')
+      const response = await fetch('/api/tags')
       if (!response.ok) {
         throw new Error('Failed to fetch tags')
       }
