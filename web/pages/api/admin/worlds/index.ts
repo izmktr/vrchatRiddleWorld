@@ -20,7 +20,7 @@ export default async function handler(
       return res.status(405).end(`Method ${req.method} Not Allowed`)
     }
 
-    const { page = 1, limit = 12, search } = req.query
+    const { page = 1, limit = 12, search, sort = 'updated_at' } = req.query
     
     const client = await clientPromise
     const db = client.db(process.env.MONGODB_DB_NAME || 'vrcworld')
@@ -42,10 +42,16 @@ export default async function handler(
     const limitNumber = parseInt(limit as string, 10) || 12
     const skip = (pageNumber - 1) * limitNumber
 
+    // ソート条件を決定
+    let sortOption: any = { updated_at: -1 }
+    if (sort === 'created_at') sortOption = { created_at: -1 }
+    if (sort === 'visits') sortOption = { visits: -1 }
+    if (sort === 'favorites') sortOption = { favorites: -1 }
+
     // ワールド一覧を取得
     const worlds = await worldsCollection
       .find(query)
-      .sort({ updated_at: -1 })
+      .sort(sortOption)
       .skip(skip)
       .limit(limitNumber)
       .project({

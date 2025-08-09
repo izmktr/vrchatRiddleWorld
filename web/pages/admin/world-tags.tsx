@@ -61,16 +61,18 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [showTagModal, setShowTagModal] = useState(false)
+  const [sortKey, setSortKey] = useState<'updated_at' | 'created_at' | 'visits' | 'favorites'>('created_at')
 
   const pagesize = 30 // 1ページあたりのワールド数
 
   // ワールド一覧を取得
-  const fetchWorlds = async (page: number = 1, search: string = '') => {
+  const fetchWorlds = async (page: number = 1, search: string = '', sort: string = sortKey) => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pagesize.toString()
+        limit: pagesize.toString(),
+        sort: sort
       })
       if (search) params.append('search', search)
 
@@ -170,11 +172,23 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
     }
   }
 
+  // ソート状態
+  const handleSortChange = (key: 'updated_at' | 'created_at' | 'visits' | 'favorites') => {
+    setSortKey(key)
+    setCurrentPage(1)
+    fetchWorlds(1, searchTerm, key)
+  }
+
   // 初期読み込み
   useEffect(() => {
-    fetchWorlds()
+    fetchWorlds(1, '', sortKey)
     fetchSystemTags()
   }, [])
+
+  // ソート・ページ・検索の変更で自動再取得
+  useEffect(() => {
+    fetchWorlds(currentPage, searchTerm, sortKey)
+  }, [sortKey, currentPage, searchTerm])
 
   // 検索
   const handleSearch = () => {
@@ -226,6 +240,35 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
               検索
             </button>
           </div>
+        </div>
+
+        {/* ソートボタン */}
+        <div className="mb-4 flex gap-2 items-center">
+          <span className="text-sm text-gray-600">並び替え:</span>
+          <button
+            className={`px-3 py-1 rounded ${sortKey === 'created_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+            onClick={() => handleSortChange('created_at')}
+          >
+            公開日
+          </button>
+          <button
+            className={`px-3 py-1 rounded ${sortKey === 'updated_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+            onClick={() => handleSortChange('updated_at')}
+          >
+            更新日
+          </button>
+          <button
+            className={`px-3 py-1 rounded ${sortKey === 'visits' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+            onClick={() => handleSortChange('visits')}
+          >
+            訪問者数
+          </button>
+          <button
+            className={`px-3 py-1 rounded ${sortKey === 'favorites' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+            onClick={() => handleSortChange('favorites')}
+          >
+            お気に入り数
+          </button>
         </div>
 
         {/* ワールド一覧 */}
