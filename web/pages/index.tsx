@@ -331,69 +331,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* タグ検索 */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">タグ検索</h2>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleTagChange('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedTag === 'all'
-                    ? 'bg-vrchat-secondary text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                すべて
-              </button>
-              {tags.map((tag) => (
-                <button
-                  key={tag._id}
-                  onClick={() => handleTagChange(tag._id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedTag === tag._id
-                      ? 'bg-vrchat-secondary text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ソートボタン */}
-          <div className="mb-4 flex gap-2 items-center">
-            <span className="text-sm text-gray-600">並び替え:</span>
-            <button
-              className={`px-3 py-1 rounded ${sortKey === 'created_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
-              onClick={() => handleSortChange('created_at')}
-            >
-              公開日
-            </button>
-            <button
-              className={`px-3 py-1 rounded ${sortKey === 'updated_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
-              onClick={() => handleSortChange('updated_at')}
-            >
-              更新日
-            </button>
-            <button
-              className={`px-3 py-1 rounded ${sortKey === 'visits' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
-              onClick={() => handleSortChange('visits')}
-            >
-              訪問者数
-            </button>
-            <button
-              className={`px-3 py-1 rounded ${sortKey === 'favorites' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
-              onClick={() => handleSortChange('favorites')}
-            >
-              お気に入り数
-            </button>
-          </div>
-
           {/* ユーザー状態フィルター（ログイン時のみ表示） */}
           {session?.user && (
             <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-4">あなたの状態で絞り込み</h2>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedStatus('all')}
@@ -468,6 +408,65 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* ソートボタン */}
+          <div className="mb-4 flex gap-2 items-center">
+            <span className="text-sm text-gray-600">並び替え:</span>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'created_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('created_at')}
+            >
+              公開日
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'updated_at' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('updated_at')}
+            >
+              更新日
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'visits' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('visits')}
+            >
+              訪問者数
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${sortKey === 'favorites' ? 'bg-vrchat-secondary text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+              onClick={() => handleSortChange('favorites')}
+            >
+              お気に入り数
+            </button>
+          </div>
+
+          {/* タグ検索 */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">タグ検索</h2>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleTagChange('all')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedTag === 'all'
+                    ? 'bg-vrchat-secondary text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                すべて
+              </button>
+              {tags.map((tag) => (
+                <button
+                  key={tag._id}
+                  onClick={() => handleTagChange(tag._id)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedTag === tag._id
+                      ? 'bg-vrchat-secondary text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* ワールド一覧 */}
           {loading ? (
