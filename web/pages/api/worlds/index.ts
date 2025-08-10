@@ -10,7 +10,7 @@ export default async function handler(
 ) {
   try {
     if (req.method === 'GET') {
-      const { page = 1, limit = 12, tag, search, author, sort = 'updated_at' } = req.query
+      const { page = 1, limit = 12, tag, search, author, sort = 'updated_at', userStatus } = req.query
       
       // セッション情報を取得
       const session = await getServerSession(req, res, authOptions)
@@ -53,6 +53,67 @@ export default async function handler(
           { description: { $regex: search, $options: 'i' } },
           { authorName: { $regex: search, $options: 'i' } }
         ]
+      }
+
+      // ユーザーステータスでフィルタリングする場合の特別処理
+      if (userStatus && userStatus !== 'all' && session?.user?.email) {
+        const userStatusNum = Number(userStatus)
+        
+        if (userStatusNum === 0) {
+          // 未選択の場合: user_world_infoに記録がないか、statusが0のワールドを取得
+          const userWorlds = await userWorldInfoCollection
+            .find({ user_id: session.user.email })
+            .toArray()
+          
+          const userWorldIds = userWorlds.map(uw => uw.world_id)
+          
+          // user_world_infoにないワールド、または明示的にstatus=0のワールド
+          const zeroStatusWorldIds = userWorlds
+            .filter(uw => uw.status === 0)
+            .map(uw => uw.world_id)
+          
+          if (userWorldIds.length > 0) {
+            query.$or = [
+              { world_id: { $nin: userWorldIds } },
+              { world_id: { $in: zeroStatusWorldIds } }
+            ]
+          }
+          // それ以外の既存の検索条件があれば、$andで結合
+          if (search) {
+            const searchQuery = query.$or
+            delete query.$or
+            query.$and = [
+              { $or: searchQuery },
+              { $or: [
+                { world_id: { $nin: userWorldIds } },
+                { world_id: { $in: zeroStatusWorldIds } }
+              ]}
+            ]
+          }
+        } else {
+          // 特定のステータス(1-5)の場合: user_world_infoでそのステータスを持つワールドのみ
+          const userWorlds = await userWorldInfoCollection
+            .find({ 
+              user_id: session.user.email, 
+              status: userStatusNum 
+            })
+            .toArray()
+          
+          const worldIds = userWorlds.map(uw => uw.world_id)
+          
+          if (worldIds.length === 0) {
+            // 該当するワールドがない場合、空の結果を返す
+            return res.status(200).json({
+              worlds: [],
+              total: 0,
+              page: Number(page),
+              limit: Number(limit),
+              totalPages: 0
+            })
+          }
+          
+          query.world_id = { $in: worldIds }
+        }
       }
 
       // 総数を取得

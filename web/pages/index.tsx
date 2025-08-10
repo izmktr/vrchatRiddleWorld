@@ -39,6 +39,12 @@ interface World {
   userStatus?: UserStatus | null
 }
 
+interface UserStatus {
+  status: number // 0:未選択, 1:未訪問, 2:注目, 3:挑戦中, 4:断念, 5:クリア
+  cleartime?: number // 0:未選択, 1:30分未満, 2:30～90分, 3:90分～3時間, 4:3～6時間, 5:6時間以上
+  vote?: number // -1:BAD, 0:未選択, 1:GOOD
+}
+
 interface Tag {
   _id: string
   tagName: string
@@ -63,7 +69,18 @@ export default function Home() {
   
   // ユーザー状態フィルター（ログインユーザー向け）
   const [selectedStatus, setSelectedStatus] = useState<number | 'all'>('all')
-
+  
+  // 各ステータスの件数
+  const [statusCounts, setStatusCounts] = useState<{[key: string]: number}>({
+    all: 0,
+    '0': 0,
+    '1': 0,
+    '2': 0,
+    '3': 0,
+    '4': 0,
+    '5': 0
+  })
+  
   // タグの処理関数（不要になったため削除）
 
   // 選択されたタグの名前を取得する関数
@@ -91,7 +108,11 @@ export default function Home() {
 
   useEffect(() => {
     fetchWorlds()
-  }, [selectedTag, page, searchQuery, selectedAuthor, sortKey])
+  }, [selectedTag, page, searchQuery, selectedAuthor, sortKey, selectedStatus])
+
+  useEffect(() => {
+    fetchStatusCounts()
+  }, [selectedTag, searchQuery, selectedAuthor, sortKey, session])
 
   const fetchTags = async () => {
     try {
@@ -117,7 +138,8 @@ export default function Home() {
         sort: sortKey,
         ...(selectedTag !== 'all' && { tag: selectedTag }),
         ...(searchQuery.trim() && { search: searchQuery.trim() }),
-        ...(selectedAuthor.trim() && { author: selectedAuthor.trim() })
+        ...(selectedAuthor.trim() && { author: selectedAuthor.trim() }),
+        ...(session?.user && selectedStatus !== 'all' && { userStatus: selectedStatus.toString() })
       })
       
       const response = await fetch(`/api/worlds?${params}`)
@@ -136,6 +158,57 @@ export default function Home() {
       setTotalPages(0)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStatusCounts = async () => {
+    if (!session?.user) {
+      setStatusCounts({
+        all: 0,
+        '0': 0,
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0,
+        '5': 0
+      })
+      return
+    }
+
+    try {
+      const counts: {[key: string]: number} = {
+        all: 0,
+        '0': 0,
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0,
+        '5': 0
+      }
+
+      // 各ステータスの件数を並行して取得
+      const promises = ['all', '0', '1', '2', '3', '4', '5'].map(async (status) => {
+        const params = new URLSearchParams({
+          page: '1',
+          limit: '1',
+          sort: sortKey,
+          ...(selectedTag !== 'all' && { tag: selectedTag }),
+          ...(searchQuery.trim() && { search: searchQuery.trim() }),
+          ...(selectedAuthor.trim() && { author: selectedAuthor.trim() }),
+          ...(status !== 'all' && { userStatus: status })
+        })
+
+        const response = await fetch(`/api/worlds?${params}`)
+        if (response.ok) {
+          const data = await response.json()
+          counts[status] = data.total || 0
+        }
+      })
+
+      await Promise.all(promises)
+      setStatusCounts(counts)
+    } catch (error) {
+      console.error('Error fetching status counts:', error)
     }
   }
 
@@ -330,7 +403,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  すべて
+                  すべて ({statusCounts.all})
                 </button>
                 <button
                   onClick={() => setSelectedStatus(0)}
@@ -340,7 +413,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  未選択
+                  未選択 ({statusCounts['0']})
                 </button>
                 <button
                   onClick={() => setSelectedStatus(1)}
@@ -350,7 +423,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  未訪問
+                  未訪問 ({statusCounts['1']})
                 </button>
                 <button
                   onClick={() => setSelectedStatus(2)}
@@ -360,7 +433,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  注目
+                  注目 ({statusCounts['2']})
                 </button>
                 <button
                   onClick={() => setSelectedStatus(3)}
@@ -370,7 +443,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  挑戦中
+                  挑戦中 ({statusCounts['3']})
                 </button>
                 <button
                   onClick={() => setSelectedStatus(4)}
@@ -380,7 +453,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  断念
+                  断念 ({statusCounts['4']})
                 </button>
                 <button
                   onClick={() => setSelectedStatus(5)}
@@ -390,7 +463,7 @@ export default function Home() {
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  クリア
+                  クリア ({statusCounts['5']})
                 </button>
               </div>
             </div>
@@ -404,19 +477,7 @@ export default function Home() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {worlds
-                  .filter(world => {
-                    // ログインユーザーの状態フィルターを適用
-                    if (session?.user && selectedStatus !== 'all') {
-                      if (!world.userStatus) {
-                        // userStatusがない場合は「未選択」(0)として扱う
-                        return selectedStatus === 0
-                      }
-                      return world.userStatus.status === selectedStatus
-                    }
-                    return true
-                  })
-                  .map((world) => (
+                {worlds.map((world) => (
                   <Link key={world.id} href={`/world/${world.id}`}>
                     <div className="card p-6 cursor-pointer">
                       {/* サムネイル */}
