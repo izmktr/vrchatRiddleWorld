@@ -14,6 +14,12 @@ interface SystemTag {
   tagDescription: string
 }
 
+interface UserStatus {
+  status: number // 0:未選択, 1:未訪問, 2:注目, 3:挑戦中, 4:断念, 5:クリア
+  cleartime?: number // 0:未選択, 1:30分未満, 2:30～90分, 3:90分～3時間, 4:3～6時間, 5:6時間以上
+  vote?: number // -1:BAD, 0:未選択, 1:GOOD
+}
+
 interface World {
   id: string
   name: string
@@ -30,6 +36,7 @@ interface World {
   capacity?: number
   recommendedCapacity?: number
   source_url?: string
+  userStatus?: UserStatus | null
 }
 
 interface Tag {
@@ -53,6 +60,9 @@ export default function Home() {
 
   // ソート状態
   const [sortKey, setSortKey] = useState<'updated_at' | 'created_at' | 'visits' | 'favorites'>('created_at')
+  
+  // ユーザー状態フィルター（ログインユーザー向け）
+  const [selectedStatus, setSelectedStatus] = useState<number | 'all'>('all')
 
   // タグの処理関数（不要になったため削除）
 
@@ -116,6 +126,8 @@ export default function Home() {
       }
       const data = await response.json()
       console.log('Fetched worlds data:', data) // デバッグ用
+      console.log('Total worlds:', data.worlds?.length || 0)
+      console.log('Worlds with userStatus:', data.worlds?.filter((w: any) => w.userStatus).length || 0)
       setWorlds(data.worlds || [])
       setTotalPages(data.totalPages || 0)
     } catch (error) {
@@ -145,6 +157,7 @@ export default function Home() {
     setSelectedTag('all')
     setSelectedAuthor('')
     setSearchQuery('')
+    setSelectedStatus('all')
     setPage(1)
   }
 
@@ -204,7 +217,7 @@ export default function Home() {
           </div>
 
           {/* 現在のフィルタ状態 */}
-          {(selectedAuthor || selectedTag !== 'all' || searchQuery.trim()) && (
+          {(selectedAuthor || selectedTag !== 'all' || searchQuery.trim() || (session?.user && selectedStatus !== 'all')) && (
             <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
@@ -222,6 +235,16 @@ export default function Home() {
                   {searchQuery.trim() && (
                     <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
                       検索: {searchQuery}
+                    </span>
+                  )}
+                  {session?.user && selectedStatus !== 'all' && (
+                    <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                      状態: {selectedStatus === 0 ? '未選択' :
+                             selectedStatus === 1 ? '未訪問' :
+                             selectedStatus === 2 ? '注目' :
+                             selectedStatus === 3 ? '挑戦中' :
+                             selectedStatus === 4 ? '断念' :
+                             selectedStatus === 5 ? 'クリア' : '不明'}
                     </span>
                   )}
                 </div>
@@ -294,6 +317,85 @@ export default function Home() {
             </button>
           </div>
 
+          {/* ユーザー状態フィルター（ログイン時のみ表示） */}
+          {session?.user && (
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold mb-4">あなたの状態で絞り込み</h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedStatus('all')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 'all'
+                      ? 'bg-vrchat-secondary text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  すべて
+                </button>
+                <button
+                  onClick={() => setSelectedStatus(0)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 0
+                      ? 'bg-gray-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  未選択
+                </button>
+                <button
+                  onClick={() => setSelectedStatus(1)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 1
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  未訪問
+                </button>
+                <button
+                  onClick={() => setSelectedStatus(2)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 2
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  注目
+                </button>
+                <button
+                  onClick={() => setSelectedStatus(3)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 3
+                      ? 'bg-yellow-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  挑戦中
+                </button>
+                <button
+                  onClick={() => setSelectedStatus(4)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 4
+                      ? 'bg-red-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  断念
+                </button>
+                <button
+                  onClick={() => setSelectedStatus(5)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedStatus === 5
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  クリア
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ワールド一覧 */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -302,7 +404,19 @@ export default function Home() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {worlds.map((world) => (
+                {worlds
+                  .filter(world => {
+                    // ログインユーザーの状態フィルターを適用
+                    if (session?.user && selectedStatus !== 'all') {
+                      if (!world.userStatus) {
+                        // userStatusがない場合は「未選択」(0)として扱う
+                        return selectedStatus === 0
+                      }
+                      return world.userStatus.status === selectedStatus
+                    }
+                    return true
+                  })
+                  .map((world) => (
                   <Link key={world.id} href={`/world/${world.id}`}>
                     <div className="card p-6 cursor-pointer">
                       {/* サムネイル */}
@@ -404,6 +518,52 @@ export default function Home() {
                           <span className="mr-1">★</span>{world.favorites?.toLocaleString?.() ?? world.favorites ?? 0}
                         </span>
                       </div>
+
+                      {/* ユーザー状態 */}
+                      {world.userStatus && (
+                        <div className="flex items-center gap-2 mb-2">
+                          {/* 状態バッジ */}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            world.userStatus.status === 0 ? 'bg-gray-100 text-gray-600' :
+                            world.userStatus.status === 1 ? 'bg-blue-100 text-blue-600' :
+                            world.userStatus.status === 2 ? 'bg-purple-100 text-purple-600' :
+                            world.userStatus.status === 3 ? 'bg-yellow-100 text-yellow-600' :
+                            world.userStatus.status === 4 ? 'bg-red-100 text-red-600' :
+                            world.userStatus.status === 5 ? 'bg-green-100 text-green-600' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {world.userStatus.status === 0 ? '未選択' :
+                             world.userStatus.status === 1 ? '未訪問' :
+                             world.userStatus.status === 2 ? '注目' :
+                             world.userStatus.status === 3 ? '挑戦中' :
+                             world.userStatus.status === 4 ? '断念' :
+                             world.userStatus.status === 5 ? 'クリア' : '不明'}
+                          </span>
+
+                          {/* クリア時間（クリア時のみ表示） */}
+                          {world.userStatus.status === 5 && world.userStatus.cleartime && world.userStatus.cleartime > 0 && (
+                            <span className="px-2 py-1 rounded-full text-xs bg-green-50 text-green-700">
+                              {world.userStatus.cleartime === 1 ? '10分未満' :
+                               world.userStatus.cleartime === 2 ? '30分未満' :
+                               world.userStatus.cleartime === 3 ? '1時間未満' :
+                               world.userStatus.cleartime === 4 ? '3時間未満' :
+                               world.userStatus.cleartime === 5 ? '3時間以上' : ''}
+                            </span>
+                          )}
+
+                          {/* 投票（Good/Bad） */}
+                          {world.userStatus.vote && world.userStatus.vote !== 0 && (
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              world.userStatus.vote === 1 ? 'bg-blue-50 text-blue-700' :
+                              world.userStatus.vote === -1 ? 'bg-orange-50 text-orange-700' :
+                              'bg-gray-50 text-gray-700'
+                            }`}>
+                              {world.userStatus.vote === 1 ? '👍 Good' :
+                               world.userStatus.vote === -1 ? '👎 Bad' : ''}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </Link>
                 ))}

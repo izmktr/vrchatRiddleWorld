@@ -50,12 +50,19 @@ export default function WorldDetail() {
   const [world, setWorld] = useState<WorldDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [showDebugInfo, setShowDebugInfo] = useState(false)
+  
+  // ユーザー状態管理
+  const [userStatus, setUserStatus] = useState(0)
+  const [userCleartime, setUserCleartime] = useState(0)
+  const [userVote, setUserVote] = useState(0)
+  const [userInfoLoading, setUserInfoLoading] = useState(false)
 
   useEffect(() => {
     if (id) {
       fetchWorld()
+      fetchUserInfo()
     }
-  }, [id])
+  }, [id, session])
 
   const fetchWorld = async () => {
     try {
@@ -68,6 +75,48 @@ export default function WorldDetail() {
       console.error('Error fetching world:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUserInfo = async () => {
+    if (!id) return
+    
+    try {
+      const response = await fetch(`/api/user-world-info/${id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setUserStatus(data.status)
+        setUserCleartime(data.cleartime)
+        setUserVote(data.vote)
+      }
+    } catch (error) {
+      console.error('Error fetching user info:', error)
+    }
+  }
+
+  const updateUserInfo = async (updates: { status?: number; cleartime?: number; vote?: number }) => {
+    if (!session?.user) return
+    
+    setUserInfoLoading(true)
+    try {
+      const response = await fetch(`/api/user-world-info/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      })
+      
+      if (response.ok) {
+        // ローカル状態を更新
+        if (updates.status !== undefined) setUserStatus(updates.status)
+        if (updates.cleartime !== undefined) setUserCleartime(updates.cleartime)
+        if (updates.vote !== undefined) setUserVote(updates.vote)
+      }
+    } catch (error) {
+      console.error('Error updating user info:', error)
+    } finally {
+      setUserInfoLoading(false)
     }
   }
 
@@ -92,7 +141,25 @@ export default function WorldDetail() {
     )
   }
 
-  // タグの処理関数
+  // ステータス・クリア時間・評価のラベル
+  const statusLabels = ['未選択', '未訪問', '注目', '挑戦中', '断念', 'クリア']
+  const cleartimeLabels = ['未クリア', '30分以下', '30～90分', '90分～3時間', '3～6時間', '6時間以上']
+
+  // 評価ボタンのハンドラー
+  const handleVote = (newVote: -1 | 1) => {
+    const finalVote = userVote === newVote ? 0 : newVote
+    updateUserInfo({ vote: finalVote })
+  }
+
+  // ステータス変更時のクリア時間リセット
+  const handleStatusChange = (newStatus: number) => {
+    const updates: { status: number; cleartime?: number } = { status: newStatus }
+    if (newStatus !== 5) {
+      // クリア以外の場合はクリア時間をリセット
+      updates.cleartime = 0
+    }
+    updateUserInfo(updates)
+  }
   const processTag = (tag: string): string | null => {
     // system_approvedは非表示
     if (tag === 'system_approved') {
@@ -193,6 +260,93 @@ export default function WorldDetail() {
                   </div>
                 )}
               </div>
+
+              {/* ユーザー状態管理 */}
+              {session?.user ? (
+                <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+                  <h2 className="text-lg font-semibold mb-4">あなたの状態</h2>
+                  
+                  {/* ステータス選択 */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">状態</label>
+                    <div className="flex flex-wrap gap-2">
+                      {statusLabels.map((label, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleStatusChange(index)}
+                          disabled={userInfoLoading}
+                          className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                            userStatus === index
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                          } ${userInfoLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* クリア時間選択 */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">クリア時間</label>
+                    <div className="flex flex-wrap gap-2">
+                      {cleartimeLabels.map((label, index) => (
+                        <button
+                          key={index}
+                          onClick={() => updateUserInfo({ cleartime: index })}
+                          disabled={userInfoLoading || userStatus !== 5}
+                          className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                            userCleartime === index
+                              ? 'bg-green-600 text-white'
+                              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                          } ${(userInfoLoading || userStatus !== 5) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {userStatus !== 5 && (
+                      <p className="text-xs text-gray-500 mt-1">※ クリア状態の場合のみ選択できます</p>
+                    )}
+                  </div>
+
+                  {/* 評価 */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">評価</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleVote(1)}
+                        disabled={userInfoLoading}
+                        className={`px-4 py-2 rounded font-medium transition-colors ${
+                          userVote === 1
+                            ? 'bg-green-600 text-white'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        } ${userInfoLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        👍 Good
+                      </button>
+                      <button
+                        onClick={() => handleVote(-1)}
+                        disabled={userInfoLoading}
+                        className={`px-4 py-2 rounded font-medium transition-colors ${
+                          userVote === -1
+                            ? 'bg-red-600 text-white'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        } ${userInfoLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        👎 Bad
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-blue-800">
+                    ログインすることで状態を保存することができます
+                  </p>
+                </div>
+              )}
 
               {/* 説明 */}
               <div className="mb-8">

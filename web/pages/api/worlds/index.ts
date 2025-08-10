@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '../auth/[...nextauth]'
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,12 +10,16 @@ export default async function handler(
 ) {
   try {
     if (req.method === 'GET') {
-  const { page = 1, limit = 12, tag, search, author, sort = 'updated_at' } = req.query
+      const { page = 1, limit = 12, tag, search, author, sort = 'updated_at' } = req.query
+      
+      // セッション情報を取得
+      const session = await getServerSession(req, res, authOptions)
       
       // MongoDB接続
       const client = await clientPromise
       const db = client.db(process.env.MONGODB_DB_NAME || 'vrcworld')
       const collection = db.collection(process.env.MONGODB_COLLECTION_NAME || 'worlds')
+      const userWorldInfoCollection = db.collection('user_world_info')
 
       // クエリ条件を構築
       let query: any = {}
@@ -106,6 +112,22 @@ export default async function handler(
               .toArray()
           }
 
+          // ユーザーの状態を取得（ログインしている場合のみ）
+          let userStatus = null
+          if (session?.user?.email) {
+            const userInfo = await userWorldInfoCollection.findOne({
+              user_id: session.user.email,
+              world_id: world.world_id || world.id
+            })
+            if (userInfo) {
+              userStatus = {
+                status: userInfo.status,
+                cleartime: userInfo.cleartime,
+                vote: userInfo.vote
+              }
+            }
+          }
+
           return {
             id: world.world_id || world.id, // world_idまたはidを使用
             name: world.name || '',
@@ -127,7 +149,8 @@ export default async function handler(
             capacity: world.capacity || 0,
             recommendedCapacity: world.recommendedCapacity || 0,
             releaseStatus: world.releaseStatus || 'unknown',
-            source_url: world.source_url || ''
+            source_url: world.source_url || '',
+            userStatus: userStatus
           }
         } catch (worldError) {
           console.error(`Error processing world ${index}:`, worldError, 'World data:', world)
