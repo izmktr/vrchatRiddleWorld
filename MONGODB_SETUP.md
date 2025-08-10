@@ -34,20 +34,41 @@ cp .env.mongodb.example .env
 ```
 
 ### 2.2 MongoDB設定を入力
-`.env`ファイルを編集：
+Webアプリケーション用の`.env.local`ファイルを編集：
 
+**web/.env.local:**
 ```env
 # MongoDB Atlas接続URI
 MONGODB_URI=mongodb+srv://your_username:your_password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
 
 # データベース名
-MONGODB_DB_NAME=nazoweb
+MONGODB_DB_NAME=vrcworld
 
-# コレクション名
-MONGODB_COLLECTION_NAME=vrchat_worlds
+# NextAuth設定
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret_here
+
+# Google OAuth設定
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# 管理者メールアドレス
+ADMIN_EMAILS=admin1@example.com,admin2@example.com
 ```
 
-**重要**: `your_username`と`your_password`を実際の値に置き換えてください。
+**API用の.envファイル:**
+```env
+# MongoDB Atlas接続URI
+MONGODB_URI=mongodb+srv://your_username:your_password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+
+# データベース名
+MONGODB_DB_NAME=vrcworld
+
+# コレクション名（メインワールドデータ）
+MONGODB_COLLECTION_NAME=worlds
+```
+
+**重要**: `your_username`、`your_password`、その他の値を実際の値に置き換えてください。
 
 ## 3. 依存関係インストール
 
@@ -81,105 +102,218 @@ pip install -r requirements.txt
 3. `.env`ファイルの`MONGODB_URI`をコピー&ペースト
 4. 「Connect」をクリック
 
-## 4. プログラム実行
+## 4. アプリケーション実行
 
-### 4.1 バッチスクレイピング（MongoDB版）
+### 4.1 Webアプリケーション（Next.js）
 ```bash
-python python/batch_scraper.py
+cd web
+npm install
+npm run dev
 ```
 
-オプション：
-- `--file vrcworld.txt` - URLリストファイル指定
-- `--delay 2.0` - リクエスト間隔（秒）
-- `--csv` - CSV出力
-- `--output filename.csv` - 出力ファイル名
+開発サーバー起動後、http://localhost:3000 でアクセス可能
 
-### 4.2 開発サーバー（MongoDB版）
+### 4.2 バッチ処理（Python）
+
+**依存関係のインストール:**
 ```bash
-python web/dev_server_mongodb.py
+pip install -r requirements.txt
 ```
 
-サーバー起動後、http://localhost:5000 でアクセス可能
+**スクレイピング実行:**
+```bash
+# 単発実行
+python python/download_vrcworld.py
 
-## 5. API仕様
+# Firebase/MongoDBアップロード
+python python/upload_mongodb.py
+```
 
-### 5.1 エンドポイント一覧
-- `GET /api/health` - ヘルスチェック
-- `GET /api/stats` - 統計情報
-- `GET /api/vrchat_worlds` - ワールド一覧（検索・ソート対応）
+### 4.3 API サーバー（Vercel/Flask）
+```bash
+# ローカル開発用
+cd api
+python index.py
+```
+
+API起動後、http://localhost:5000 でアクセス可能
+
+## 5. API仕様（現在の環境）
+
+### 5.1 Next.js API エンドポイント
+- `GET /api/worlds` - ワールド一覧（検索・ソート・ページング対応）
+- `GET /api/worlds/[id]` - 特定ワールド詳細
+- `GET /api/tags` - タグ一覧
+- `GET /api/admin/worlds` - 管理者用ワールド管理
+- `POST /api/user-world-info/[worldId]` - ユーザーステータス更新
+
+### 5.2 検索・フィルター（Next.js API）
+```
+GET /api/worlds?page=1&limit=12&tag=puzzle&search=maze&author=phi16&sort=visits&userStatus=5
+```
+
+**パラメータ:**
+- `page` - ページ番号（デフォルト: 1）
+- `limit` - 1ページあたりの件数（デフォルト: 12）
+- `tag` - タグフィルター（システムタグID）
+- `search` - 検索キーワード（名前・説明・作者名で検索）
+- `author` - 制作者フィルター
+- `sort` - ソート項目（updated_at, created_at, visits, favorites）
+- `userStatus` - ユーザーステータス（0-5, all）
+
+### 5.3 Vercel API エンドポイント
+- `GET /api/vrchat_worlds` - ワールド一覧（制限付き）
 - `GET /api/vrchat_worlds/all` - 全ワールド取得
-- `GET /api/vrchat_worlds/<world_id>` - 特定ワールド詳細
+- `GET /api/stats` - 統計情報
+- `GET /api/world/<world_id>` - 特定ワールド詳細
+- `GET /api/health` - ヘルスチェック
 
-### 5.2 検索・フィルター
+### 5.4 Vercel API 使用例
 ```
-GET /api/vrchat_worlds?search=puzzle&sort=popularity&order=desc&page=1&limit=20
+GET /api/vrchat_worlds?limit=100
 ```
 
-パラメータ：
-- `search` - 検索キーワード（名前、説明文、作者名で検索）
-- `sort` - ソート項目（updated_at, popularity, name, visits, favorites, capacity, heat）
-- `order` - ソート順（asc, desc）
-- `page` - ページ番号
-- `limit` - 1ページあたりの件数
+**パラメータ:**
+- `limit` - 取得件数制限（デフォルト: 100）
 
-## 6. データ構造
+## 6. データ構造（現在の環境）
 
-### 6.1 MongoDBコレクション
-コレクション名: `vrchat_worlds`
+### 6.1 MongoDBデータベース構成
+- **データベース名**: `vrcworld`
+- **主要コレクション**:
+  - `worlds` - VRChatワールドデータ
+  - `user_world_info` - ユーザーごとのワールド状態
+  - `worlds_tag` - ワールドとタグの関連付け
+  - `system_taglist` - システムタグマスター
 
-### 6.2 ドキュメント構造
+### 6.2 コレクション別データ構造
+
+#### worldsコレクション
 ```json
 {
   "_id": ObjectId,
   "world_id": "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "id": "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "name": "ワールド名",
-  "title": "ワールドタイトル",
   "authorName": "作者名",
   "description": "ワールド説明",
-  "capacity": 16,
-  "visits": 1000,
-  "favorites": 50,
-  "popularity": 5,
-  "heat": 3,
-  "thumbnailImageUrl": "https://...",
+  "capacity": 64,
+  "recommendedCapacity": 32,
+  "visits": 26982,
+  "favorites": 3176,
+  "popularity": 6,
+  "heat": 4,
+  "imageUrl": "https://api.vrchat.cloud/api/1/file/...",
+  "thumbnailImageUrl": "https://api.vrchat.cloud/api/1/image/...",
   "publicationDate": "2023-05-18T16:09:36.115Z",
-  "tags": ["tag1", "tag2"],
-  "updated_at": ISODate,
-  "created_at": ISODate,
-  "scraped_at": "2023-05-18T16:09:36.115Z"
+  "labsPublicationDate": "2023-05-18T13:42:35.077Z",
+  "releaseStatus": "public",
+  "tags": ["system_approved"],
+  "created_at": "2023-04-02T09:33:34.033Z",
+  "updated_at": "2023-12-25T09:17:20.641Z",
+  "scraped_at": "2025-08-05T07:13:20.452690",
+  "source_url": "https://vrchat.com/home/world/wrld_..."
 }
 ```
 
-### 6.3 インデックス設定
+#### user_world_infoコレクション
+```json
+{
+  "_id": ObjectId,
+  "user_id": "user@example.com",
+  "world_id": "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "status": 5,
+  "cleartime": "2025-08-10T12:00:00.000Z",
+  "vote": 4,
+  "created_at": ISODate,
+  "updated_at": ISODate
+}
+```
+
+**ステータス値の定義:**
+- 0: 未選択
+- 1: 未訪問
+- 2: 注目
+- 3: 挑戦中
+- 4: 断念
+- 5: クリア
+
+#### worlds_tagコレクション
+```json
+{
+  "_id": ObjectId,
+  "worldId": "wrld_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "tagId": ObjectId("tag_id_here")
+}
+```
+
+#### system_taglistコレクション
+```json
+{
+  "_id": ObjectId,
+  "tagName": "puzzle",
+  "tagDescription": "パズル要素のあるワールド"
+}
+```
+
+### 6.3 インデックス設定（現在の環境用）
+
+#### 使用されるコレクション
+1. **worlds** - ワールドデータ（メインコレクション）
+2. **user_world_info** - ユーザーごとのワールド状態管理
+3. **worlds_tag** - ワールドとタグの関連付け
+4. **system_taglist** - システムタグマスター
 
 #### 基本インデックス（自動作成）
-- `_id` - プライマリキー
-- `world_id` - 一意インデックス（手動作成推奨）
+- `_id` - プライマリキー（全コレクション）
 
-#### パフォーマンス向上用インデックス（推奨）
+#### インデックス設定（優先度順）
 
-**単一フィールドインデックス:**
+**Step 1: 必須インデックス（最優先）**
 ```javascript
-// MongoDB Compass または mongo shell で実行
-db.worlds.createIndex({ "world_id": 1 }, { unique: true })
-db.worlds.createIndex({ "updated_at": -1 })  // 最重要：デフォルトソート
-db.worlds.createIndex({ "popularity": -1 })
-db.worlds.createIndex({ "visits": -1 })
-db.worlds.createIndex({ "favorites": -1 })
-db.worlds.createIndex({ "heat": -1 })
+// worlds コレクション - 基本検索用
+db.worlds.createIndex({ "world_id": 1 }, { unique: true })  // 一意制約
+db.worlds.createIndex({ "updated_at": -1 })                // デフォルトソート（最重要）
+
+// user_world_info コレクション - ユーザーステータス検索用
+db.user_world_info.createIndex({ "user_id": 1, "status": 1 })
+db.user_world_info.createIndex({ "user_id": 1, "world_id": 1 }, { unique: true })
+
+// worlds_tag コレクション - タグフィルター用
+db.worlds_tag.createIndex({ "tagId": 1 })
+db.worlds_tag.createIndex({ "worldId": 1 })
 ```
 
-**複合インデックス:**
+**Step 2: パフォーマンス向上インデックス（高優先度）**
 ```javascript
-// タグフィルター + ソート用
-db.worlds.createIndex({ "tags": 1, "updated_at": -1 })
-db.worlds.createIndex({ "tags": 1, "popularity": -1 })
-db.worlds.createIndex({ "tags": 1, "visits": -1 })
+// worlds コレクション - ソート・フィルター用
+db.worlds.createIndex({ "visits": -1 })                    // 訪問数ソート
+db.worlds.createIndex({ "favorites": -1 })                 // お気に入り数ソート
+db.worlds.createIndex({ "created_at": -1 })                // 作成日ソート
+db.worlds.createIndex({ "authorName": 1 })                 // 制作者フィルター
+
+// user_world_info コレクション - 追加検索用
+db.user_world_info.createIndex({ "world_id": 1 })
+db.user_world_info.createIndex({ "status": 1 })
+
+// worlds_tag コレクション - 複合検索用
+db.worlds_tag.createIndex({ "tagId": 1, "worldId": 1 }, { unique: true })
+
+// system_taglist コレクション - タグ名検索用
+db.system_taglist.createIndex({ "tagName": 1 })
 ```
 
-**テキスト検索インデックス（従来型）:**
+**Step 3: 複合インデックス（中優先度）**
 ```javascript
-// 基本的な全文検索用（Atlas Search推奨前の代替案）
+// 複数条件での検索最適化用
+db.worlds.createIndex({ "authorName": 1, "updated_at": -1 })
+db.worlds.createIndex({ "world_id": 1, "updated_at": -1 })
+db.worlds.createIndex({ "popularity": -1 })                // 人気度ソート
+```
+
+**Step 4: 検索用インデックス（オプション）**
+```javascript
+// 全文検索用（現在の検索機能に対応）
 db.worlds.createIndex({
   "name": "text",
   "description": "text",
@@ -190,77 +324,63 @@ db.worlds.createIndex({
     "authorName": 5,
     "description": 1
   },
-  name: "text_search_index"
+  name: "search_index"
 })
 ```
 
-#### Atlas Search Index（推奨）
+#### インデックス作成の実行手順
 
-MongoDB Atlas管理画面で以下のSearch Indexを作成：
+**MongoDB Compass を使用（推奨）:**
+1. MongoDB Compassを開く
+2. データベース`vrcworld`を選択
+3. 各コレクション（worlds, user_world_info, worlds_tag, system_taglist）を選択
+4. 「Indexes」タブをクリック
+5. 「CREATE INDEX」ボタンをクリック
+6. 上記のインデックスを順番に作成
 
-**Index Name:** `world_search`
+**作成優先度の説明:**
+- **Step 1（必須）**: アプリケーション動作に必要な最低限のインデックス
+- **Step 2（高優先度）**: パフォーマンス向上に大きく貢献するインデックス
+- **Step 3（中優先度）**: 複合クエリの最適化用インデックス
+- **Step 4（オプション）**: 検索機能の向上用（データサイズが大きい場合に推奨）
 
-**Index Definition:**
-```json
-{
-  "mappings": {
-    "fields": {
-      "name": {
-        "type": "string",
-        "analyzer": "standard"
-      },
-      "description": {
-        "type": "string",
-        "analyzer": "standard"  
-      },
-      "authorName": {
-        "type": "string",
-        "analyzer": "standard"
-      },
-      "tags": {
-        "type": "stringFacet"
-      },
-      "updated_at": {
-        "type": "date"
-      },
-      "popularity": {
-        "type": "number"
-      }
-    }
-  }
-}
-```
+**Mongo Shell 一括実行用コマンド:**
+```bash
+# MongoDB Atlas接続後
+use vrcworld
 
-**Atlas Search使用時のクエリ例:**
-```javascript
-db.worlds.aggregate([
-  {
-    $search: {
-      index: "world_search",
-      compound: {
-        must: [
-          {
-            text: {
-              query: "puzzle",
-              path: ["name", "description", "authorName"]
-            }
-          }
-        ],
-        filter: [
-          {
-            text: {
-              query: "game",
-              path: "tags"
-            }
-          }
-        ]
-      }
-    }
-  },
-  { $sort: { updated_at: -1 } },
-  { $skip: 0 },
-  { $limit: 12 }
-])
+# Step 1: 必須インデックス（最優先）
+db.worlds.createIndex({ "world_id": 1 }, { unique: true })
+db.worlds.createIndex({ "updated_at": -1 })
+db.user_world_info.createIndex({ "user_id": 1, "status": 1 })
+db.user_world_info.createIndex({ "user_id": 1, "world_id": 1 }, { unique: true })
+db.worlds_tag.createIndex({ "tagId": 1 })
+db.worlds_tag.createIndex({ "worldId": 1 })
+
+# Step 2: パフォーマンス向上用（推奨）
+db.worlds.createIndex({ "visits": -1 })
+db.worlds.createIndex({ "favorites": -1 })
+db.worlds.createIndex({ "created_at": -1 })
+db.worlds.createIndex({ "authorName": 1 })
+db.user_world_info.createIndex({ "world_id": 1 })
+db.user_world_info.createIndex({ "status": 1 })
+db.worlds_tag.createIndex({ "tagId": 1, "worldId": 1 }, { unique: true })
+db.system_taglist.createIndex({ "tagName": 1 })
+
+# Step 3: 複合インデックス（必要に応じて）
+db.worlds.createIndex({ "authorName": 1, "updated_at": -1 })
+db.worlds.createIndex({ "world_id": 1, "updated_at": -1 })
+db.worlds.createIndex({ "popularity": -1 })
+
+# Step 4: テキスト検索用（オプション）
+db.worlds.createIndex({
+  "name": "text",
+  "description": "text",
+  "authorName": "text"
+}, {
+  weights: { "name": 10, "authorName": 5, "description": 1 },
+  name: "search_index"
+})
 ```
 
 ## 7. トラブルシューティング
@@ -298,41 +418,37 @@ ServerSelectionTimeoutError
 
 ### 8.2 パフォーマンス最適化
 
-#### インデックス作成
-**MongoDB Compass を使用（推奨）:**
-1. MongoDB Compassを開く
-2. データベース`vrcworld` → コレクション`worlds`を選択
-3. 「Indexes」タブをクリック
-4. 「CREATE INDEX」ボタンをクリック
-5. 以下のインデックスを順番に作成：
+#### インデックス管理とメンテナンス
 
+**インデックス使用状況の確認:**
 ```javascript
-// 基本インデックス（優先度：高）
-{ "world_id": 1 }  // Options: unique: true
-{ "updated_at": -1 }
+// インデックス一覧確認
+db.worlds.getIndexes()
+db.user_world_info.getIndexes()
+db.worlds_tag.getIndexes()
+db.system_taglist.getIndexes()
 
-// ソート用インデックス（優先度：中）
-{ "popularity": -1 }
-{ "visits": -1 }
-{ "favorites": -1 }
+// インデックス使用統計
+db.runCommand({ collStats: "worlds" })
 
-// 複合インデックス（優先度：中）
-{ "tags": 1, "updated_at": -1 }
+// クエリ実行計画確認（例）
+db.worlds.find({ "updated_at": { $lt: new Date() } }).explain("executionStats")
 ```
 
-**Mongo Shell/MongoDB Atlas Web UI を使用:**
+**不要インデックスの削除:**
 ```javascript
-// 基本インデックス
-db.worlds.createIndex({ "world_id": 1 }, { unique: true })
-db.worlds.createIndex({ "updated_at": -1 })
-db.worlds.createIndex({ "popularity": -1 })
-db.worlds.createIndex({ "tags": 1, "updated_at": -1 })
+// インデックス削除（例）
+db.worlds.dropIndex("index_name")
+
+// 全インデックス削除（_id以外）
+db.worlds.dropIndexes()
 ```
 
-#### その他の最適化
-1. **Connection Pooling**: アプリケーション設定で接続プールを最適化
-2. **Read Preference**: 読み取り分散設定を検討  
-3. **Atlas Search**: 全文検索性能向上のためSearch Indexを作成
+#### その他の最適化設定
+1. **Connection Pooling**: アプリケーション設定で接続プールサイズを調整
+2. **Read Preference**: 読み取り分散設定を検討
+3. **Write Concern**: 書き込み要求レベルの最適化
+4. **MongoDB Atlas**: 適切なクラスターサイズの選択
 
 ## 9. 移行作業
 
