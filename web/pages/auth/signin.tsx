@@ -43,8 +43,16 @@ export default function SignIn({ providers }: SignInProps) {
                 {Object.values(providers).map((provider) => (
                   <div key={provider.name} className="mt-4">
                     <button
-                      onClick={() => signIn(provider.id, { callbackUrl: '/' })}
-                      className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                      onClick={() => {
+                        // モバイル環境でのログイン改善
+                        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/'
+                        signIn(provider.id, { 
+                          callbackUrl,
+                          redirect: true
+                        })
+                      }}
+                      className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors active:bg-gray-100"
+                      type="button"
                     >
                       {provider.id === 'google' && (
                         <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
