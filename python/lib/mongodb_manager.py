@@ -110,6 +110,30 @@ class MongoDBManager:
             logger.error(f"❌ MongoDB保存エラー: {e}")
             return False
     
+    def get_all_worlds(self) -> List[Dict[str, Any]]:
+        """全ワールドデータを取得"""
+        try:
+            if not self.is_connected() or self._collection is None:
+                return []
+            
+            return list(self._collection.find({}))
+            
+        except Exception as e:
+            logger.error(f"❌ 全ワールド取得エラー: {e}")
+            return []
+    
+    def get_collection(self, collection_name: str) -> Optional[Collection[Dict[str, Any]]]:
+        """指定されたコレクションを取得"""
+        try:
+            if not self.is_connected() or self._db is None:
+                return None
+            
+            return self._db[collection_name]
+            
+        except Exception as e:
+            logger.error(f"❌ コレクション取得エラー ({collection_name}): {e}")
+            return None
+    
     def get_stats(self) -> Dict[str, Any]:
         """統計情報取得"""
         try:

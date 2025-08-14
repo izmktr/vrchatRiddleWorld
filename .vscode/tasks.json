@@ -57,6 +57,17 @@
 			"group": "build",
 			"problemMatcher": [],
 			"isBackground": false
+		},
+		{
+			"label": "Update World Data",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"python/update_world_data.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }
