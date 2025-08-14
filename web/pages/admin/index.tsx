@@ -224,6 +224,22 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">管理メニュー</h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Link href="/admin/new-worlds" className="group">
+                  <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
+                    <div className="flex items-center">
+                      <div className="text-2xl mr-4">➕</div>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
+                          新規ワールド登録
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          VRChatワールドURLの追加登録
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
                 <Link href="/admin/worlds" className="group">
                   <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
                     <div className="flex items-center">

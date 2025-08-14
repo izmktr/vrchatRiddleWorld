@@ -47,6 +47,9 @@ export default function SafeAdminNav() {
             <Link href="/admin" className="hover:underline">
               管理ダッシュボード
             </Link>
+            <Link href="/admin/new-worlds" className="hover:underline">
+              新規ワールド登録
+            </Link>
             <Link href="/admin/worlds" className="hover:underline">
               ワールド管理
             </Link>
