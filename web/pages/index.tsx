@@ -603,11 +603,11 @@ export default function Home() {
                           {/* クリア時間（クリア時のみ表示） */}
                           {world.userStatus.status === 5 && world.userStatus.cleartime && world.userStatus.cleartime > 0 && (
                             <span className="px-2 py-1 rounded-full text-xs bg-green-50 text-green-700">
-                              {world.userStatus.cleartime === 1 ? '10分未満' :
-                               world.userStatus.cleartime === 2 ? '30分未満' :
-                               world.userStatus.cleartime === 3 ? '1時間未満' :
-                               world.userStatus.cleartime === 4 ? '3時間未満' :
-                               world.userStatus.cleartime === 5 ? '3時間以上' : ''}
+                              {world.userStatus.cleartime === 1 ? '30分以下' :
+                               world.userStatus.cleartime === 2 ? '30～90分' :
+                               world.userStatus.cleartime === 3 ? '90分～3時間' :
+                               world.userStatus.cleartime === 4 ? '3～6時間' :
+                               world.userStatus.cleartime === 5 ? '6時間以上' : ''}
                             </span>
                           )}
 
