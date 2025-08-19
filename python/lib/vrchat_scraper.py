@@ -29,14 +29,6 @@ class VRChatWorldScraper:
                 logger.error(f"❌ ワールドIDの抽出に失敗: {url}")
                 return None
             
-            # 既存のraw_dataをチェック
-            existing_data = self._check_existing_raw_data(world_id)
-            if existing_data:
-                print(f"⏭️  既存データを使用: {world_id}（1日以内のデータあり）")
-                # キャッシュから取得したことを示すフラグを追加
-                existing_data['_from_cache'] = True
-                return existing_data
-            
             # VRChat APIエンドポイント
             api_url = f"https://api.vrchat.cloud/api/1/worlds/{world_id}"
             

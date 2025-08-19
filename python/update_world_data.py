@@ -46,11 +46,22 @@ class WorldDataUpdater:
             if not scraped_at:
                 return True  # scraped_atがない場合は更新対象
             
-            # 日時変換
+            # 日時変換（タイムゾーン情報を確実に設定）
             if isinstance(scraped_at, str):
-                scraped_at = datetime.fromisoformat(scraped_at.replace('Z', '+00:00'))
+                if scraped_at.endswith('Z'):
+                    scraped_at = datetime.fromisoformat(scraped_at.replace('Z', '+00:00'))
+                elif '+' in scraped_at or scraped_at.count('-') > 2:
+                    scraped_at = datetime.fromisoformat(scraped_at)
+                else:
+                    # タイムゾーン情報がない場合はUTCとして扱う
+                    scraped_at = datetime.fromisoformat(scraped_at).replace(tzinfo=timezone.utc)
             elif hasattr(scraped_at, 'replace'):  # datetime object
-                scraped_at = scraped_at.replace(tzinfo=timezone.utc)
+                # datetimeオブジェクトの場合、タイムゾーン情報がなければUTCを設定
+                if scraped_at.tzinfo is None:
+                    scraped_at = scraped_at.replace(tzinfo=timezone.utc)
+                else:
+                    # 既にタイムゾーン情報がある場合はUTCに変換
+                    scraped_at = scraped_at.astimezone(timezone.utc)
             
             # 経過時間 = 現在時刻 - scraped_at
             elapsed_time = now - scraped_at
@@ -64,9 +75,21 @@ class WorldDataUpdater:
             updated_at = world_doc.get('updated_at')
             if updated_at:
                 if isinstance(updated_at, str):
-                    updated_at = datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
+                    # 文字列の場合、タイムゾーン情報を適切に処理
+                    if updated_at.endswith('Z'):
+                        updated_at = datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
+                    elif '+' in updated_at or updated_at.count('-') > 2:
+                        updated_at = datetime.fromisoformat(updated_at)
+                    else:
+                        # タイムゾーン情報がない場合はUTCとして扱う
+                        updated_at = datetime.fromisoformat(updated_at).replace(tzinfo=timezone.utc)
                 elif hasattr(updated_at, 'replace'):  # datetime object
-                    updated_at = updated_at.replace(tzinfo=timezone.utc)
+                    # datetimeオブジェクトの場合、タイムゾーン情報がなければUTCを設定
+                    if updated_at.tzinfo is None:
+                        updated_at = updated_at.replace(tzinfo=timezone.utc)
+                    else:
+                        # 既にタイムゾーン情報がある場合はUTCに変換
+                        updated_at = updated_at.astimezone(timezone.utc)
                 
                 # 最終アップデート時間 = scraped_at - updated_at
                 last_update_time = scraped_at - updated_at
