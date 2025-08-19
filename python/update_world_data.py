@@ -12,8 +12,8 @@ update_mongodb.txtの設計に従い、以下の処理を行います：
 import os
 import sys
 import time
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timezone
+from typing import List, Dict, Any, Tuple
 
 # ライブラリパスを絶対パスで追加
 lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib'))
