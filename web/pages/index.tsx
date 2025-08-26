@@ -63,6 +63,7 @@ export default function Home() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [actualSearchQuery, setActualSearchQuery] = useState<string>('') // 実際に検索に使用するクエリ
 
   // ソート状態
   const [sortKey, setSortKey] = useState<'updated_at' | 'created_at' | 'visits' | 'favorites'>('created_at')
@@ -108,11 +109,11 @@ export default function Home() {
 
   useEffect(() => {
     fetchWorlds()
-  }, [selectedTag, page, searchQuery, selectedAuthor, sortKey, selectedStatus])
+  }, [selectedTag, page, actualSearchQuery, selectedAuthor, sortKey, selectedStatus])
 
   useEffect(() => {
     fetchStatusCounts()
-  }, [selectedTag, searchQuery, selectedAuthor, sortKey, session])
+  }, [selectedTag, actualSearchQuery, selectedAuthor, sortKey, session])
 
   const fetchTags = async () => {
     try {
@@ -137,7 +138,7 @@ export default function Home() {
         limit: '12',
         sort: sortKey,
         ...(selectedTag !== 'all' && { tag: selectedTag }),
-        ...(searchQuery.trim() && { search: searchQuery.trim() }),
+        ...(actualSearchQuery.trim() && { search: actualSearchQuery.trim() }),
         ...(selectedAuthor.trim() && { author: selectedAuthor.trim() }),
         ...(session?.user && selectedStatus !== 'all' && { userStatus: selectedStatus.toString() })
       })
@@ -188,17 +189,17 @@ export default function Home() {
 
       // 各ステータスの件数を並行して取得
       const promises = ['all', '0', '1', '2', '3', '4', '5'].map(async (status) => {
-        const params = new URLSearchParams({
-          page: '1',
-          limit: '1',
-          sort: sortKey,
-          ...(selectedTag !== 'all' && { tag: selectedTag }),
-          ...(searchQuery.trim() && { search: searchQuery.trim() }),
-          ...(selectedAuthor.trim() && { author: selectedAuthor.trim() }),
-          ...(status !== 'all' && { userStatus: status })
-        })
-
-        const response = await fetch(`/api/worlds?${params}`)
+          const params = new URLSearchParams({
+            page: '1',
+            limit: '1',
+            sort: sortKey,
+            ...(selectedTag !== 'all' && { tag: selectedTag }),
+            ...(actualSearchQuery.trim() && { search: actualSearchQuery.trim() }),
+            ...(selectedAuthor.trim() && { author: selectedAuthor.trim() }),
+            ...(status !== 'all' && { userStatus: status })
+          })
+          
+          const response = await fetch(`/api/worlds?${params}`)
         if (response.ok) {
           const data = await response.json()
           counts[status] = data.total || 0
@@ -230,11 +231,13 @@ export default function Home() {
     setSelectedTag('all')
     setSelectedAuthor('')
     setSearchQuery('')
+    setActualSearchQuery('')
     setSelectedStatus('all')
     setPage(1)
   }
 
   const handleSearch = () => {
+    setActualSearchQuery(searchQuery)
     setPage(1)
     // fetchWorldsは依存関係のuseEffectで自動的に呼ばれる
   }
@@ -290,7 +293,7 @@ export default function Home() {
           </div>
 
           {/* 現在のフィルタ状態 */}
-          {(selectedAuthor || selectedTag !== 'all' || searchQuery.trim() || (session?.user && selectedStatus !== 'all')) && (
+          {(selectedAuthor || selectedTag !== 'all' || actualSearchQuery.trim() || (session?.user && selectedStatus !== 'all')) && (
             <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
@@ -305,9 +308,9 @@ export default function Home() {
                       タグ: {getSelectedTagName()}
                     </span>
                   )}
-                  {searchQuery.trim() && (
+                  {actualSearchQuery.trim() && (
                     <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-                      検索: {searchQuery}
+                      検索: {actualSearchQuery}
                     </span>
                   )}
                   {session?.user && selectedStatus !== 'all' && (

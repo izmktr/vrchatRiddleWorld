@@ -206,6 +206,8 @@ export default async function handler(
             description: world.description || '',
             visits: world.visits || 0,
             favorites: world.favorites || 0,
+            visitCount: world.visits || 0,  // フロントエンド用のフィールド追加
+            favoriteCount: world.favorites || 0,  // フロントエンド用のフィールド追加
             popularity: world.popularity || 0,
             capacity: world.capacity || 0,
             recommendedCapacity: world.recommendedCapacity || 0,
@@ -228,6 +230,8 @@ export default async function handler(
             description: 'データ処理エラー',
             visits: 0,
             favorites: 0,
+            visitCount: 0,  // フロントエンド用のフィールド追加
+            favoriteCount: 0,  // フロントエンド用のフィールド追加
             popularity: 0,
             capacity: 0,
             recommendedCapacity: 0,
