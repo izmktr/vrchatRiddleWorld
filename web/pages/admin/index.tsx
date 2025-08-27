@@ -1,13 +1,9 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { requireAdminAccess } from '@/lib/auth'
-
-interface AdminDashboardProps {
-  session: any
-}
+import { useRouter } from 'next/router'
 
 interface DashboardStats {
   totalWorlds: number
@@ -16,12 +12,18 @@ interface DashboardStats {
   errorCount: number
 }
 
-export default function AdminDashboard({ session: serverSession }: AdminDashboardProps) {
-  // クライアントサイドのセッション情報も取得
-  const { data: clientSession } = useSession()
+// 管理者メール判定関数（環境変数の安全な取得）
+function isAdmin(email?: string | null): boolean {
+  if (!email) return false
   
-  // クライアントサイドのセッション情報を優先的に使用
-  const session = clientSession || serverSession
+  // 管理者メールアドレスの確認（クライアントサイド）
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
+  return adminEmails.includes(email)
+}
+
+export default function AdminDashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   
   // 統計情報の状態管理
   const [stats, setStats] = useState<DashboardStats>({
@@ -31,11 +33,53 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
     errorCount: 0
   })
   const [loading, setLoading] = useState(true)
+  const [isAdminUser, setIsAdminUser] = useState(false)
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true)
+
+  // 認証状態の確認
+  useEffect(() => {
+    if (status === 'loading') return // まだ読み込み中
+
+    if (status === 'unauthenticated') {
+      signIn() // 未認証の場合はサインインページにリダイレクト
+      return
+    }
+
+    if (session?.user?.email) {
+      // 管理者権限をAPIで確認
+      checkAdminStatus()
+    }
+  }, [session, status])
+
+  // 管理者権限の確認
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/check')
+      if (response.ok) {
+        const data = await response.json()
+        setIsAdminUser(data.isAdmin)
+        if (!data.isAdmin) {
+          router.push('/') // 管理者でない場合はホームにリダイレクト
+        }
+      } else {
+        setIsAdminUser(false)
+        router.push('/') // エラーの場合もホームにリダイレクト
+      }
+    } catch (error) {
+      console.error('Admin check failed:', error)
+      setIsAdminUser(false)
+      router.push('/')
+    } finally {
+      setAdminCheckLoading(false)
+    }
+  }
 
   // 統計情報を取得
   useEffect(() => {
-    fetchDashboardStats()
-  }, [])
+    if (isAdminUser && !adminCheckLoading) {
+      fetchDashboardStats()
+    }
+  }, [isAdminUser, adminCheckLoading])
 
   const fetchDashboardStats = async () => {
     try {
@@ -77,6 +121,20 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
     } finally {
       setLoading(false)
     }
+  }
+
+  // ローディング中の表示
+  if (status === 'loading' || adminCheckLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
+
+  // 管理者でない場合は表示しない
+  if (!isAdminUser) {
+    return null
   }
   
   return (
@@ -405,4 +463,19 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
   )
 }
 
-export const getServerSideProps = requireAdminAccess()
+// サーバーサイドでの認証確認
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const { requireAdminAccess } = await import('../../lib/auth')
+    const adminAuthFunction = requireAdminAccess()
+    return await adminAuthFunction(context)
+  } catch (error) {
+    console.error('Admin authentication error:', error)
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    }
+  }
+}

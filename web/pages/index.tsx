@@ -117,15 +117,33 @@ export default function Home() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch('/api/tags')
-      if (!response.ok) {
-        throw new Error('Failed to fetch tags')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetching tags from /api/tags...')
       }
+      
+      const response = await fetch('/api/tags')
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Tags API response status:', response.status)
+      }
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Tags API error response:', errorText)
+        throw new Error(`Failed to fetch tags: ${response.status} ${response.statusText}`)
+      }
+      
       const data = await response.json()
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Tags API response data:', data)
+      }
+      
       // システムタグをそのまま設定
       setTags(data.tags || [])
     } catch (error) {
       console.error('Error fetching tags:', error)
+      // エラー時もデフォルト値を設定してアプリケーションを継続
       setTags([])
     }
   }
@@ -455,19 +473,25 @@ export default function Home() {
               >
                 すべて
               </button>
-              {tags.map((tag) => (
-                <button
-                  key={tag._id}
-                  onClick={() => handleTagChange(tag._id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedTag === tag._id
-                      ? 'bg-vrchat-secondary text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
-                </button>
-              ))}
+              {tags.length > 0 ? (
+                tags.map((tag) => (
+                  <button
+                    key={tag._id}
+                    onClick={() => handleTagChange(tag._id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      selectedTag === tag._id
+                        ? 'bg-vrchat-secondary text-white'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
+                  </button>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500 px-4 py-2 bg-gray-50 rounded-lg">
+                  タグの読み込み中...
+                </div>
+              )}
             </div>
           </div>
 

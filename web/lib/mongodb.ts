@@ -1,13 +1,20 @@
-import { MongoClient } from 'mongodb'
+import { MongoClient, Db } from 'mongodb'
 
-const uri = process.env.MONGODB_URI!
+const uri = process.env.MONGODB_URI
+const dbName = process.env.MONGODB_DB_NAME || 'vrcworld'
+
+if (!uri) {
+  throw new Error('MONGODB_URI environment variable is not defined')
+}
+
+// MongoDB connection options optimized for Atlas M0 (free tier)
 const options = {
-  maxPoolSize: 10, // M0クラスターに適した接続プールサイズ
-  minPoolSize: 2,  // 最小接続数
-  maxIdleTimeMS: 30000, // 30秒でアイドル接続をクローズ
-  serverSelectionTimeoutMS: 5000, // サーバー選択タイムアウト
-  socketTimeoutMS: 45000, // ソケットタイムアウト
-  bufferMaxEntries: 0, // バッファを無効化
+  connectTimeoutMS: 30000,
+  socketTimeoutMS: 30000,
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 10000,
+  retryWrites: true,
+  // Removed bufferMaxEntries as it's not supported in newer MongoDB driver versions
 }
 
 let client: MongoClient
@@ -31,6 +38,14 @@ if (process.env.NODE_ENV === 'development') {
   clientPromise = client.connect()
 }
 
-// Export a module-scoped MongoClient promise. By doing this in a
-// separate module, the client can be shared across functions.
+export async function getDatabase(): Promise<Db> {
+  try {
+    const client = await clientPromise
+    return client.db(dbName)
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error)
+    throw error
+  }
+}
+
 export default clientPromise
