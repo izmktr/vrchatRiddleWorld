@@ -1,7 +1,14 @@
 import { MongoClient } from 'mongodb'
 
 const uri = process.env.MONGODB_URI!
-const options = {}
+const options = {
+  maxPoolSize: 10, // M0クラスターに適した接続プールサイズ
+  minPoolSize: 2,  // 最小接続数
+  maxIdleTimeMS: 30000, // 30秒でアイドル接続をクローズ
+  serverSelectionTimeoutMS: 5000, // サーバー選択タイムアウト
+  socketTimeoutMS: 45000, // ソケットタイムアウト
+  bufferMaxEntries: 0, // バッファを無効化
+}
 
 let client: MongoClient
 let clientPromise: Promise<MongoClient>

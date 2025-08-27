@@ -67,44 +67,21 @@ export default function EvaluationPage() {
   const fetchWorlds = async () => {
     try {
       setLoading(true)
-      setLoadingProgress(null)
+      setLoadingProgress({ current: 0, total: 0 })
       
-      // まず最初のページで総件数を取得
-      const firstResponse = await fetch('/api/worlds?page=1&limit=100&includeUserStatus=true')
-      if (!firstResponse.ok) {
-        console.error('Failed to fetch worlds:', firstResponse.status)
+      // 評価専用APIで全件を一度に取得
+      const response = await fetch('/api/evaluation/worlds')
+      if (!response.ok) {
+        console.error('Failed to fetch worlds:', response.status)
         setWorlds([])
         setInitialWorldStates({})
         return
       }
       
-      const firstData = await firstResponse.json()
-      const total = firstData.total || 0
-      let allWorlds: World[] = [...(firstData.worlds || [])]
+      const data = await response.json()
+      const allWorlds = data.worlds || []
       
-      // 進捗を表示
-      setLoadingProgress({ current: allWorlds.length, total })
-      
-      // 残りのページがある場合は追加で取得
-      if (total > 100) {
-        const totalPages = Math.ceil(total / 100)
-        
-        for (let page = 2; page <= totalPages; page++) {
-          try {
-            const response = await fetch(`/api/worlds?page=${page}&limit=100&includeUserStatus=true`)
-            if (response.ok) {
-              const data = await response.json()
-              if (data?.worlds) {
-                allWorlds = [...allWorlds, ...data.worlds]
-                setLoadingProgress({ current: allWorlds.length, total })
-              }
-            }
-          } catch (pageError) {
-            console.error(`Failed to fetch page ${page}:`, pageError)
-          }
-        }
-      }
-      
+      setLoadingProgress({ current: allWorlds.length, total: allWorlds.length })
       setWorlds(allWorlds)
       
       // 初期状態を保存
