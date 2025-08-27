@@ -8,8 +8,21 @@ import type { NextApiRequest, NextApiResponse } from 'next'
  */
 export function isAdmin(email: string | null | undefined): boolean {
   if (!email) return false
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
-  return adminEmails.includes(email)
+  
+  // 環境変数が設定されていない場合はfalseを返す
+  const adminEmailsEnv = process.env.ADMIN_EMAILS
+  if (!adminEmailsEnv) {
+    console.warn('ADMIN_EMAILS environment variable is not set')
+    return false
+  }
+  
+  try {
+    const adminEmails = adminEmailsEnv.split(',').map(e => e.trim()).filter(e => e.length > 0)
+    return adminEmails.includes(email)
+  } catch (error) {
+    console.error('Error parsing ADMIN_EMAILS:', error)
+    return false
+  }
 }
 
 /**
@@ -42,21 +55,16 @@ export function requireAdminAccess(
       // セッションを取得
       const session = await getServerSession(context.req, context.res, authOptions)
 
-      console.log('=== Server-side auth check ===')
-      console.log('- Session exists:', !!session)
-      console.log('- User email:', session?.user?.email)
-      console.log('- User isAdmin (from session):', session?.user?.isAdmin)
-      console.log('- ADMIN_EMAILS env:', process.env.ADMIN_EMAILS)
-      console.log('- Environment:', process.env.NODE_ENV)
-      console.log('- NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
+      // 本番環境ではログを出力しない
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('=== Server-side auth check ===')
+        console.log('- Session exists:', !!session)
+        console.log('- User email:', session?.user?.email)
+        console.log('- ADMIN_EMAILS env exists:', !!process.env.ADMIN_EMAILS)
+      }
       
-      const adminEmailsArray = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
-      console.log('- Admin emails array:', adminEmailsArray)
-      console.log('- Is admin (calculated):', session?.user?.email ? isAdmin(session.user.email) : false)
-
       // 未ログインの場合はサインインページにリダイレクト
       if (!session) {
-        console.log('❌ Redirecting to signin - no session')
         return {
           redirect: {
             destination: '/auth/signin?callbackUrl=' + encodeURIComponent(context.resolvedUrl),
@@ -67,9 +75,6 @@ export function requireAdminAccess(
 
       // 管理者でない場合はホームページにリダイレクト
       if (!isAdmin(session.user?.email)) {
-        console.log('❌ Redirecting to home - not admin')
-        console.log('- Checking email:', session.user?.email)
-        console.log('- Against admin emails:', adminEmailsArray)
         return {
           redirect: {
             destination: '/',
@@ -78,23 +83,32 @@ export function requireAdminAccess(
         }
       }
 
-      console.log('✅ Admin access granted')
-
       // 管理者の場合は、追加のgetServerSidePropsがあれば実行
       if (getServerSidePropsFunc) {
-        const result = await getServerSidePropsFunc(context)
-        
-        // セッション情報を追加
-        if ('props' in result) {
+        try {
+          const result = await getServerSidePropsFunc(context)
+          
+          // セッション情報を追加
+          if ('props' in result) {
+            return {
+              ...result,
+              props: {
+                ...result.props,
+                session,
+              },
+            }
+          }
+          return result
+        } catch (innerError) {
+          console.error('Inner getServerSideProps error:', innerError)
+          // 内部エラーの場合でもセッション情報は返す
           return {
-            ...result,
             props: {
-              ...result.props,
               session,
+              error: 'Failed to load page data'
             },
           }
         }
-        return result
       }
 
       // デフォルトではセッション情報のみを返す
@@ -104,10 +118,12 @@ export function requireAdminAccess(
         },
       }
     } catch (error) {
-      console.error('❌ Auth check error:', error)
+      console.error('Auth check error:', error)
+      
+      // 認証エラーの場合は、ログイン画面にリダイレクト
       return {
         redirect: {
-          destination: '/',
+          destination: '/auth/signin',
           permanent: false,
         },
       }

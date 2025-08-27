@@ -1,6 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: '.next',
+  // ビルド時のエラーを回避
+  webpack: (config, { isServer }) => {
+    // サーバーサイドビルドの際の外部依存関係を設定
+    if (isServer) {
+      config.externals.push('mongodb')
+    }
+    return config
+  },
+  // 実験的機能の設定
+  experimental: {
+    forceSwcTransforms: true,
+  },
+  // ビルド時のタイムアウトを延長
+  staticPageGenerationTimeout: 60,
   images: {
     remotePatterns: [
       {

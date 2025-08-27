@@ -31,11 +31,6 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
     errorCount: 0
   })
   const [loading, setLoading] = useState(true)
-  
-  // デバッグ用ログ
-  console.log('Server Session:', serverSession)
-  console.log('Client Session:', clientSession)
-  console.log('Final Session:', session)
 
   // 統計情報を取得
   useEffect(() => {
@@ -45,18 +40,21 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
   const fetchDashboardStats = async () => {
     try {
       setLoading(true)
-      console.log('Dashboard: Starting to fetch stats...')
       
-      // ワールド数を取得
-      const worldsResponse = await fetch('/api/worlds?page=1&limit=1')
-      console.log('Dashboard: Worlds API response status:', worldsResponse.status)
-      
+      // ワールド数を取得（エラーハンドリング強化）
       let totalWorlds = 0
 
-      if (worldsResponse.ok) {
-        const worldsData = await worldsResponse.json()
-        console.log('Dashboard: Worlds API data:', worldsData)
-        totalWorlds = worldsData.total || 0
+      try {
+        const worldsResponse = await fetch('/api/worlds?page=1&limit=1')
+        if (worldsResponse.ok) {
+          const worldsData = await worldsResponse.json()
+          totalWorlds = worldsData.total || 0
+        } else {
+          console.warn('Worlds API returned:', worldsResponse.status)
+        }
+      } catch (worldsError) {
+        console.warn('Failed to fetch worlds count:', worldsError)
+        // エラーでも続行
       }
 
       const newStats = {
@@ -66,12 +64,16 @@ export default function AdminDashboard({ session: serverSession }: AdminDashboar
         errorCount: 0 // 後で実装
       }
       
-      console.log('Dashboard: Setting stats to:', newStats)
       setStats(newStats)
     } catch (error) {
       console.error('Dashboard: Failed to fetch stats:', error)
-      // エラー時もstatsを更新して、再レンダリングを確実にする
-      setStats(prev => ({ ...prev }))
+      // エラー時もデフォルト値を設定
+      setStats({
+        totalWorlds: 0,
+        totalUsers: 0,
+        lastScrapingDate: null,
+        errorCount: 0
+      })
     } finally {
       setLoading(false)
     }
