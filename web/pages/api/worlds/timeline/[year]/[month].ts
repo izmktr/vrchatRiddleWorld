@@ -29,8 +29,8 @@ export default async function handler(
       {
         $match: {
           $or: [
-            { publicationDate: { $exists: true, $ne: null, $ne: '' } },
-            { created_at: { $exists: true, $ne: null, $ne: '' } }
+            { publicationDate: { $exists: true, $nin: [null, ''] } },
+            { created_at: { $exists: true, $nin: [null, ''] } }
           ]
         }
       },
