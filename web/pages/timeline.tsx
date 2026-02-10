@@ -2,6 +2,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import Header from '@/components/Header'
 
 interface YearlyStats {
   [year: number]: {
@@ -123,6 +124,8 @@ export default function TimelinePage() {
         <title>タイムライン - VRChat ワールド</title>
         <meta name="description" content="公開日別にVRChatワールドを閲覧" />
       </Head>
+
+      <Header />
 
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
