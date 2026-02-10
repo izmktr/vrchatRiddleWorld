@@ -20,14 +20,29 @@ export default async function handler(
       return res.status(405).end(`Method ${req.method} Not Allowed`)
     }
 
-    const { page = 1, limit = 12, search, sort = 'updated_at' } = req.query
+    const { page = 1, limit = 12, search, sort = 'updated_at', tagId } = req.query
     
     const client = await clientPromise
     const db = client.db(process.env.MONGODB_DB_NAME || 'vrcworld')
     const worldsCollection = db.collection(process.env.MONGODB_COLLECTION_NAME || 'worlds')
+    const worldTagsCollection = db.collection('worlds_tag')
+
+    // タグIDでフィルタリングする場合、該当するワールドIDを取得
+    let worldIdsForTag: string[] | null = null
+    if (tagId && typeof tagId === 'string') {
+      const worldTagsWithTag = await worldTagsCollection
+        .find({ tagId: tagId })
+        .toArray()
+      worldIdsForTag = worldTagsWithTag.map(wt => wt.worldId)
+    }
 
     // クエリ条件を構築
     let query: any = {}
+    
+    // タグによる絞り込み
+    if (worldIdsForTag !== null) {
+      query.world_id = { $in: worldIdsForTag }
+    }
     
     // 検索条件
     if (search && typeof search === 'string') {
@@ -69,7 +84,6 @@ export default async function handler(
       .toArray()
 
     // 各ワールドに付与されているタグ情報を取得
-    const worldTagsCollection = db.collection('worlds_tag')
     const systemTagsCollection = db.collection('system_taglist') // 修正: system_tags -> system_taglist
     const worldsWithTags = await Promise.all(
       worlds.map(async (world) => {
@@ -78,24 +92,15 @@ export default async function handler(
           .find({ worldId: world.world_id })
           .toArray()
 
-        console.log(`World ${world.name} has ${worldTags.length} tags:`, worldTags.map(wt => ({ tagId: wt.tagId, tagIdType: typeof wt.tagId })))
-
         // タグの詳細情報を取得
         const tagIds = worldTags.map(wt => wt.tagId)
-        
-        // タグIDの形式をログ出力
-        console.log('Tag IDs:', tagIds)
-        console.log('Tag IDs converted:', tagIds.map(id => typeof id === 'string' ? new ObjectId(id) : id))
 
         const tagDetails = await systemTagsCollection
           .find({ _id: { $in: tagIds.map(id => typeof id === 'string' ? new ObjectId(id) : id) } })
           .toArray()
 
-        console.log('Found tag details:', tagDetails.map(td => ({ _id: td._id, tagName: td.tagName })))
-
         const tags = worldTags.map(wt => {
           const tagInfo = tagDetails.find(td => td._id.toString() === wt.tagId.toString())
-          console.log(`Tag mapping: ${wt.tagId} -> ${tagInfo?.tagName || 'Unknown'}`)
           return {
             tagId: wt.tagId,
             tagName: tagInfo?.tagName || 'Unknown',
@@ -105,6 +110,7 @@ export default async function handler(
         })
 
         return {
+          id: world.world_id, // idフィールドを明示的に設定
           ...world,
           tagCount: worldTags.length,
           tags
@@ -117,6 +123,7 @@ export default async function handler(
 
     res.status(200).json({
       worlds: worldsWithTags,
+      totalCount: total,
       pagination: {
         current: pageNumber,
         total: Math.ceil(total / limitNumber),
