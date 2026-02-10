@@ -40,6 +40,12 @@ export default function Header() {
               >
                 ワールド一覧
               </Link>
+              <Link 
+                href="/timeline" 
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+              >
+                📅 年代別
+              </Link>
               {session && (
                 <Link 
                   href="/evaluation" 
