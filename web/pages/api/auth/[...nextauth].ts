@@ -11,7 +11,9 @@ function isAdminEmail(email?: string | null): boolean {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise, {
+    databaseName: process.env.MONGODB_DB_NAME || 'vrcworld'
+  }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

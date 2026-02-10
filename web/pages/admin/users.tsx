@@ -9,10 +9,9 @@ interface User {
   id: string
   name: string
   email: string
-  image?: string
+  image?: string | null
+  emailVerified?: string | null
   createdAt: string
-  lastSignIn: string
-  isAdmin: boolean
 }
 
 interface AdminUsersProps {
@@ -33,39 +32,15 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      console.log('Admin Users: Fetching users data...')
       
-      // モックデータを使用（実際のAPIがない場合）
-      // 実際のユーザーAPIがある場合は、そのエンドポイントに変更してください
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          name: session?.user?.name || 'Current User',
-          email: session?.user?.email || 'user@example.com',
-          image: session?.user?.image || undefined,
-          createdAt: new Date().toISOString(),
-          lastSignIn: new Date().toISOString(),
-          isAdmin: true
-        }
-      ]
-      
-      // 実際のAPIを使用する場合は以下のコメントアウトを解除
-      /*
       const response = await fetch('/api/admin/users')
       if (response.ok) {
         const data = await response.json()
-        console.log('Admin Users: Received data:', data)
         setUsers(data.users || [])
       } else {
         console.error('Admin Users: Failed to fetch users:', response.status)
-        setUsers(mockUsers)
+        setUsers([])
       }
-      */
-      
-      // 現在はモックデータを使用
-      console.log('Admin Users: Using mock data:', mockUsers)
-      setUsers(mockUsers)
-      
     } catch (error) {
       console.error('Admin Users: Error fetching users:', error)
       setUsers([])
@@ -137,16 +112,16 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">🔐</span>
+                      <span className="text-white text-sm font-medium">✔️</span>
                     </div>
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        管理者数
+                        メール認証済み
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {users.filter(u => u.isAdmin).length}
+                        {users.filter(u => u.emailVerified).length}
                       </dd>
                     </dl>
                   </div>
@@ -190,9 +165,9 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
                   <button 
                     onClick={() => {
                       const csvContent = "data:text/csv;charset=utf-8," 
-                        + "名前,メール,権限,登録日,最終ログイン\n"
+                        + "名前,メール,メール認証,登録日\n"
                         + users.map(user => 
-                          `"${user.name}","${user.email}","${user.isAdmin ? '管理者' : '一般ユーザー'}","${new Date(user.createdAt).toLocaleDateString('ja-JP')}","${new Date(user.lastSignIn).toLocaleDateString('ja-JP')}"`
+                          `"${user.name}","${user.email}","${user.emailVerified ? '認証済み' : '未認証'}","${new Date(user.createdAt).toLocaleDateString('ja-JP')}"`
                         ).join("\n")
                       
                       const encodedUri = encodeURI(csvContent)
@@ -233,13 +208,10 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
                           ユーザー
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          権限
+                          メール認証
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           登録日
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          最終ログイン
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           操作
@@ -252,11 +224,22 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
-                                <img
-                                  className="h-10 w-10 rounded-full"
-                                  src={user.image || '/default-avatar.png'}
-                                  alt={user.name}
-                                />
+                                {user.image ? (
+                                  <img
+                                    className="h-10 w-10 rounded-full"
+                                    src={user.image}
+                                    alt={user.name}
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/default-avatar.png'
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                    <span className="text-gray-600 text-sm font-medium">
+                                      {user.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
@@ -270,23 +253,17 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.isAdmin 
-                                ? 'bg-red-100 text-red-800' 
+                              user.emailVerified
+                                ? 'bg-green-100 text-green-800' 
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
-                              {user.isAdmin ? '🔐 管理者' : '👤 一般ユーザー'}
+                              {user.emailVerified ? '✔️ 認証済み' : '⚠️ 未認証'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {new Date(user.createdAt).toLocaleDateString('ja-JP')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(user.lastSignIn).toLocaleDateString('ja-JP')}
-                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                              詳細
-                            </button>
                             <button className="text-red-600 hover:text-red-900">
                               削除
                             </button>
