@@ -24,11 +24,80 @@ export default function NewWorldRegistration({ session }: NewWorldRegistrationPr
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info')
   const [registeredWorlds, setRegisteredWorlds] = useState<NewWorld[]>([])
   const [loadingWorlds, setLoadingWorlds] = useState(true)
+  const [clipboardHasValidUrl, setClipboardHasValidUrl] = useState(false)
 
   // 登録済みワールド一覧を取得
   useEffect(() => {
     fetchRegisteredWorlds()
   }, [])
+
+  // クリップボードの内容を定期的にチェック
+  useEffect(() => {
+    const checkClipboard = async () => {
+      try {
+        if (!navigator.clipboard) return
+        
+        const text = await navigator.clipboard.readText()
+        const isValid = isVRChatWorldUrl(text)
+        setClipboardHasValidUrl(isValid)
+      } catch (error) {
+        // クリップボード読み取り権限がない場合は無視
+        setClipboardHasValidUrl(false)
+      }
+    }
+
+    // 初回チェック
+    checkClipboard()
+
+    // 定期的にチェック（2秒ごと）
+    const interval = setInterval(checkClipboard, 2000)
+
+    // フォーカス時にもチェック
+    window.addEventListener('focus', checkClipboard)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', checkClipboard)
+    }
+  }, [])
+
+  // VRChatワールドURLの形式をチェック
+  const isVRChatWorldUrl = (text: string): boolean => {
+    if (!text) return false
+    
+    // 複数行の場合は各行をチェック
+    const lines = text.trim().split('\n')
+    if (lines.length === 0) return false
+    
+    // VRChatワールドURLの正規表現
+    const urlPattern = /^https:\/\/vrchat\.com\/home\/world\/wrld_[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(\/info)?$/i
+    
+    // すべての行が有効なURLか確認
+    return lines.every(line => {
+      const trimmed = line.trim()
+      return trimmed.length === 0 || urlPattern.test(trimmed)
+    })
+  }
+
+  // クリップボードから貼り付け（末尾に追記）
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (isVRChatWorldUrl(text)) {
+        // 既存のテキストがある場合は末尾に追記
+        setUrls(prev => {
+          const trimmed = prev.trim()
+          return trimmed ? `${trimmed}\n${text}` : text
+        })
+        setMessage('クリップボードから貼り付けました')
+        setMessageType('info')
+      }
+    } catch (error) {
+      console.error('Clipboard read error:', error)
+      setMessage('クリップボードの読み取りに失敗しました')
+      setMessageType('error')
+    }
+  }
 
   const fetchRegisteredWorlds = async () => {
     try {
@@ -58,6 +127,7 @@ export default function NewWorldRegistration({ session }: NewWorldRegistrationPr
       const urlList = urls
         .split('\n')
         .map(url => url.trim())
+        .map(url => url.endsWith('/info') ? url.slice(0, -5) : url) // /info を削除
         .filter(url => url.length > 0)
 
       if (urlList.length === 0) {
@@ -207,13 +277,29 @@ https://vrchat.com/home/world/wrld_87654321-4321-4321-4321-210987654321`}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? '登録中...' : 'URLを登録'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? '登録中...' : 'URLを登録'}
+                    </button>
+                    
+                    {/* クリップボード貼り付けアイコンボタン */}
+                    <button
+                      type="button"
+                      onClick={handlePasteFromClipboard}
+                      disabled={!clipboardHasValidUrl || loading}
+                      title="クリップボードから貼り付け"
+                      className="inline-flex items-center justify-center w-10 h-10 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+                    >
+                      <span className="text-xl">📋</span>
+                      {clipboardHasValidUrl && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                      )}
+                    </button>
+                  </div>
                   
                   <div className="text-sm text-gray-500">
                     入力行数: {urls.split('\n').filter(line => line.trim()).length}
