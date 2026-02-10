@@ -35,6 +35,7 @@ class WorldDataUpdater:
         self.skip_count = 0
         self.error_count = 0
         self.error_worlds: List[str] = []
+        self.corrupted_tag = "破損"  # エラー時に付与するタグ
         
     def should_update_world(self, world_doc: Dict[str, Any]) -> bool:
         """ワールドを更新すべきかどうかを判定"""
@@ -110,6 +111,89 @@ class WorldDataUpdater:
             print(f"⚠️  更新判定エラー: {e}")
             return False
     
+    def add_corrupted_tag(self, world_id: str, error_message: str = "") -> None:
+        """ワールドに破損タグを追加（worlds_tagコレクションにもリレーションを作成）"""
+        try:
+            # まず、破損タグのIDを取得
+            system_tags_collection = self.mongodb.get_collection('system_taglist')
+            if system_tags_collection is None:
+                print(f"⚠️  system_taglistコレクションにアクセスできません: {world_id}")
+                return
+            
+            corrupted_tag_doc = system_tags_collection.find_one({'tagName': self.corrupted_tag})
+            if not corrupted_tag_doc:
+                print(f"⚠️  破損タグがsystem_taglistに存在しません: {world_id}")
+                return
+            
+            corrupted_tag_id = str(corrupted_tag_doc['_id'])
+            
+            # 1. worldsコレクションのtagsフィールドに追加
+            worlds_collection = self.mongodb.get_collection('worlds')
+            if worlds_collection is not None:
+                worlds_collection.update_one(
+                    {'world_id': world_id},
+                    {'$addToSet': {'tags': self.corrupted_tag}}
+                )
+            
+            # 2. worlds_tagコレクションにリレーションを作成
+            worlds_tag_collection = self.mongodb.get_collection('worlds_tag')
+            if worlds_tag_collection is not None:
+                # 既存のリレーションがないか確認
+                existing_relation = worlds_tag_collection.find_one({
+                    'worldId': world_id,
+                    'tagId': corrupted_tag_id
+                })
+                
+                if not existing_relation:
+                    worlds_tag_collection.insert_one({
+                        'worldId': world_id,
+                        'tagId': corrupted_tag_id,
+                        'createdAt': datetime.now()
+                    })
+                    print(f"🏷️  破損タグを追加: {world_id} ({error_message})")
+                else:
+                    print(f"🏷️  破損タグは既に存在: {world_id}")
+            else:
+                print(f"⚠️  worlds_tagコレクションにアクセスできません: {world_id}")
+                
+        except Exception as e:
+            print(f"❌ 破損タグ追加エラー {world_id}: {e}")
+    
+    def remove_corrupted_tag(self, world_id: str) -> None:
+        """ワールドから破損タグを削除（worlds_tagコレクションからもリレーションを削除）"""
+        try:
+            # 破損タグのIDを取得
+            system_tags_collection = self.mongodb.get_collection('system_taglist')
+            if system_tags_collection is None:
+                return
+            
+            corrupted_tag_doc = system_tags_collection.find_one({'tagName': self.corrupted_tag})
+            if not corrupted_tag_doc:
+                return
+            
+            corrupted_tag_id = str(corrupted_tag_doc['_id'])
+            
+            # 1. worldsコレクションのtagsフィールドから削除
+            worlds_collection = self.mongodb.get_collection('worlds')
+            if worlds_collection is not None:
+                worlds_collection.update_one(
+                    {'world_id': world_id},
+                    {'$pull': {'tags': self.corrupted_tag}}
+                )
+            
+            # 2. worlds_tagコレクションからリレーションを削除
+            worlds_tag_collection = self.mongodb.get_collection('worlds_tag')
+            if worlds_tag_collection is not None:
+                result = worlds_tag_collection.delete_one({
+                    'worldId': world_id,
+                    'tagId': corrupted_tag_id
+                })
+                if result.deleted_count > 0:
+                    print(f"🗑️  破損タグを削除: {world_id}")
+                    
+        except Exception as e:
+            print(f"❌ 破損タグ削除エラー {world_id}: {e}")
+    
     def update_existing_worlds(self) -> None:
         """既存ワールドの更新処理"""
         print("🔄 既存ワールドの更新処理を開始...")
@@ -149,6 +233,7 @@ class WorldDataUpdater:
                     world_data = self.scraper.scrape_world_by_url(source_url)
                     if not world_data:
                         print(f"❌ データ取得失敗: {world_id}")
+                        self.add_corrupted_tag(world_id, "データ取得失敗")
                         self.error_count += 1
                         self.error_worlds.append(f"{world_id} - データ取得失敗")
                         continue
@@ -162,6 +247,8 @@ class WorldDataUpdater:
                     # MongoDBに保存
                     if self.mongodb.save_world_data(world_data):
                         print(f"✅ 更新完了: {world_id}")
+                        # 更新成功時は破損タグを削除
+                        self.remove_corrupted_tag(world_id)
                         self.success_count += 1
                         
                         # 生データも保存
@@ -173,11 +260,13 @@ class WorldDataUpdater:
                             time.sleep(2)
                     else:
                         print(f"❌ 保存失敗: {world_id}")
+                        self.add_corrupted_tag(world_id, "保存失敗")
                         self.error_count += 1
                         self.error_worlds.append(f"{world_id} - 保存失敗")
                         
                 except Exception as e:
                     print(f"❌ 更新エラー {world_id}: {e}")
+                    self.add_corrupted_tag(world_id, f"例外: {str(e)}")
                     self.error_count += 1
                     self.error_worlds.append(f"{world_id} - 例外: {str(e)}")
                     continue
@@ -236,6 +325,7 @@ class WorldDataUpdater:
                             {'_id': new_world_id},
                             {'$set': {'status': 'error', 'error_message': 'データ取得失敗'}}
                         )
+                        # world_idが取得できないため、URLベースで記録
                         self.error_count += 1
                         self.error_worlds.append(f"{world_url} - データ取得失敗")
                         continue
@@ -243,6 +333,9 @@ class WorldDataUpdater:
                     # worldsコレクションに保存
                     if self.mongodb.save_world_data(world_data):
                         print(f"✅ 新規ワールド追加完了: {world_data.get('id')}")
+                        # 保存成功時は破損タグを削除（既存の場合）
+                        if world_data.get('id'):
+                            self.remove_corrupted_tag(world_data['id'])
                         
                         # 生データも保存
                         raw_data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'raw_data')
@@ -262,6 +355,9 @@ class WorldDataUpdater:
                             time.sleep(2)
                     else:
                         print(f"❌ 保存失敗: {world_url}")
+                        # world_dataがある場合は破損タグを付与
+                        if world_data and world_data.get('id'):
+                            self.add_corrupted_tag(world_data['id'], "保存失敗")
                         # ステータスをエラーに更新
                         new_worlds_collection.update_one(
                             {'_id': new_world_id},
@@ -294,11 +390,13 @@ class WorldDataUpdater:
     
     def print_summary(self):
         """処理結果のサマリーを表示"""
-        print("\\n" + "=" * 50)
+        print("\n" + "=" * 50)
         print("📊 ワールドデータ更新結果サマリー")
         print(f"✅ 成功: {self.success_count}件")
         print(f"⏭️  スキップ: {self.skip_count}件")
         print(f"❌ エラー: {self.error_count}件")
+        if self.error_count > 0:
+            print(f"🏷️  エラーワールドには'{self.corrupted_tag}'タグが付与されました")
         print("=" * 50)
         
         # エラーワールドのログ出力

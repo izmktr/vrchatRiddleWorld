@@ -147,6 +147,41 @@ class MongoDBManager:
             logger.error(f"❌ 統計取得エラー: {e}")
             return {'total': 0, 'connected': False}
     
+    def add_tag_to_world(self, world_id: str, tag: str) -> bool:
+        """ワールドにタグを追加"""
+        try:
+            if not self.is_connected() or self._collection is None:
+                return False
+                
+            # タグが既に存在しない場合のみ追加
+            result = self._collection.update_one(
+                {'world_id': world_id},
+                {'$addToSet': {'tags': tag}}
+            )
+            
+            return result.modified_count > 0 or result.matched_count > 0
+            
+        except Exception as e:
+            logger.error(f"❌ タグ追加エラー ({world_id}, {tag}): {e}")
+            return False
+    
+    def remove_tag_from_world(self, world_id: str, tag: str) -> bool:
+        """ワールドからタグを削除"""
+        try:
+            if not self.is_connected() or self._collection is None:
+                return False
+                
+            result = self._collection.update_one(
+                {'world_id': world_id},
+                {'$pull': {'tags': tag}}
+            )
+            
+            return result.modified_count > 0
+            
+        except Exception as e:
+            logger.error(f"❌ タグ削除エラー ({world_id}, {tag}): {e}")
+            return False
+    
     def close(self):
         """接続を閉じる"""
         if self._client:
