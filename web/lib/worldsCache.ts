@@ -6,6 +6,7 @@ type CacheEntry<T> = {
 }
 
 const worldsCache = new Map<string, CacheEntry<unknown>>()
+let lastUpdatedAt: number | null = null
 
 const normalizeValue = (value: unknown): string => {
   if (value instanceof Date) {
@@ -64,12 +65,14 @@ export const getWorldsCache = async <T>(
 
   const value = await fetcher()
   worldsCache.set(key, { value, expiresAt: now + ttlMs })
+  lastUpdatedAt = now
   return value
 }
 
 export const clearWorldsCache = (prefix?: string) => {
   if (!prefix) {
     worldsCache.clear()
+    lastUpdatedAt = null
     return
   }
 
@@ -78,4 +81,9 @@ export const clearWorldsCache = (prefix?: string) => {
       worldsCache.delete(key)
     }
   })
+  lastUpdatedAt = null
 }
+
+export const getWorldsCacheInfo = () => ({
+  lastUpdatedAt
+})

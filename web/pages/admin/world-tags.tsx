@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { GetServerSideProps } from 'next'
 // import { requireAdminAccess } from '@/lib/auth' // 一時的にコメントアウト
 import Header from '@/components/Header'
@@ -66,7 +66,7 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
   const pagesize = 30 // 1ページあたりのワールド数
 
   // ワールド一覧を取得
-  const fetchWorlds = async (page: number = 1, search: string = '', sort: string = sortKey) => {
+  const fetchWorlds = useCallback(async (page: number = 1, search: string = '', sort: string = sortKey) => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -87,10 +87,10 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagesize, sortKey])
 
   // システムタグ一覧を取得
-  const fetchSystemTags = async () => {
+  const fetchSystemTags = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/tags')
       if (!response.ok) throw new Error('Failed to fetch system tags')
@@ -100,10 +100,10 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
     } catch (error) {
       console.error('Error fetching system tags:', error)
     }
-  }
+  }, [])
 
   // ワールドタグを取得
-  const fetchWorldTags = async (worldId: string) => {
+  const fetchWorldTags = useCallback(async (worldId: string) => {
     try {
       setTagsLoading(true)
       const response = await fetch(`/api/admin/world-tags/${worldId}`)
@@ -116,7 +116,7 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
     } finally {
       setTagsLoading(false)
     }
-  }
+  }, [])
 
   // タグを追加
   const addTag = async (worldId: string, tagId: string) => {
@@ -183,12 +183,12 @@ export default function AdminWorldTags({ session: serverSession }: AdminWorldTag
   useEffect(() => {
     fetchWorlds(1, '', sortKey)
     fetchSystemTags()
-  }, [])
+  }, [fetchWorlds, fetchSystemTags, sortKey])
 
   // ソート・ページ・検索の変更で自動再取得
   useEffect(() => {
     fetchWorlds(currentPage, searchTerm, sortKey)
-  }, [sortKey, currentPage, searchTerm])
+  }, [fetchWorlds, currentPage, searchTerm, sortKey])
 
   // 検索
   const handleSearch = () => {

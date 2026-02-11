@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 // import { requireAdminAccess } from '@/lib/auth' // 一時的にコメントアウト
 import { useAdminAuth } from '@/hooks/useAdminAuth'
@@ -35,6 +35,31 @@ export default function AdminTags({ session: serverSession }: AdminTagsProps) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  const fetchTags = useCallback(async () => {
+    try {
+      setLoading(true)
+      console.log('Fetching tags from /api/admin/tags')
+      
+      const response = await fetch('/api/admin/tags')
+      console.log('Response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Received tags data:', data)
+        setTags(data.tags || [])
+      } else {
+        const errorData = await response.json()
+        console.error('Error response:', errorData)
+        setError(`タグの取得に失敗しました (${response.status}): ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+      setError('タグの取得中にエラーが発生しました: ' + (error as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     // セッション情報をデバッグ出力
     console.log('Current session:', finalSession)
@@ -45,7 +70,7 @@ export default function AdminTags({ session: serverSession }: AdminTagsProps) {
     if (!isLoading && isAdmin) {
       fetchTags()
     }
-  }, [isLoading, isAdmin])
+  }, [isLoading, isAdmin, finalSession, fetchTags])
 
   // ローディング中または認証チェック中
   if (isLoading) {
@@ -69,31 +94,6 @@ export default function AdminTags({ session: serverSession }: AdminTagsProps) {
         </div>
       </div>
     )
-  }
-
-  const fetchTags = async () => {
-    try {
-      setLoading(true)
-      console.log('Fetching tags from /api/admin/tags')
-      
-      const response = await fetch('/api/admin/tags')
-      console.log('Response status:', response.status)
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Received tags data:', data)
-        setTags(data.tags || [])
-      } else {
-        const errorData = await response.json()
-        console.error('Error response:', errorData)
-        setError(`タグの取得に失敗しました (${response.status}): ${errorData.error || 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error('Error fetching tags:', error)
-      setError('タグの取得中にエラーが発生しました: ' + (error as Error).message)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const openModal = (tag?: SystemTag) => {

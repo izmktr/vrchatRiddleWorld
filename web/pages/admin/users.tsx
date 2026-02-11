@@ -1,9 +1,10 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 // import { requireAdminAccess } from '@/lib/auth' // 一時的にコメントアウト
+import ImageWithFallback from '@/components/ImageWithFallback'
 
 interface User {
   id: string
@@ -29,7 +30,7 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
   const [loading, setLoading] = useState(true)
 
   // ユーザーデータを取得
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -47,12 +48,12 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // コンポーネントマウント時にデータを取得
   useEffect(() => {
     fetchUsers()
-  }, [session])
+  }, [fetchUsers, session])
 
   return (
     <>
@@ -225,13 +226,12 @@ export default function AdminUsers({ session: serverSession }: AdminUsersProps) 
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
                                 {user.image ? (
-                                  <img
-                                    className="h-10 w-10 rounded-full"
+                                  <ImageWithFallback
                                     src={user.image}
                                     alt={user.name}
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/default-avatar.png'
-                                    }}
+                                    width={40}
+                                    height={40}
+                                    className="h-10 w-10 rounded-full"
                                   />
                                 ) : (
                                   <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">

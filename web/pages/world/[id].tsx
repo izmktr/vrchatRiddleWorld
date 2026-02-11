@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -57,14 +57,7 @@ export default function WorldDetail() {
   const [userVote, setUserVote] = useState(0)
   const [userInfoLoading, setUserInfoLoading] = useState(false)
 
-  useEffect(() => {
-    if (id) {
-      fetchWorld()
-      fetchUserInfo()
-    }
-  }, [id, session])
-
-  const fetchWorld = async () => {
+  const fetchWorld = useCallback(async () => {
     try {
       const response = await fetch(`/api/worlds/${id}`)
       if (response.ok) {
@@ -76,9 +69,9 @@ export default function WorldDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = useCallback(async () => {
     if (!id) return
     
     try {
@@ -92,7 +85,14 @@ export default function WorldDetail() {
     } catch (error) {
       console.error('Error fetching user info:', error)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      fetchWorld()
+      fetchUserInfo()
+    }
+  }, [id, session, fetchWorld, fetchUserInfo])
 
   const updateUserInfo = async (updates: { status?: number; cleartime?: number; vote?: number }) => {
     if (!session?.user) return

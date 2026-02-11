@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 // import { requireAdminAccess } from '@/lib/auth' // 一時的にコメントアウト
 import ImageWithFallback from '@/components/ImageWithFallback'
@@ -49,7 +49,7 @@ export default function AdminWorlds({ session: serverSession }: AdminWorldsProps
   const [totalCount, setTotalCount] = useState(0)
 
   // システムタグを取得
-  const fetchSystemTags = async () => {
+  const fetchSystemTags = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/tags')
       if (response.ok) {
@@ -63,10 +63,10 @@ export default function AdminWorlds({ session: serverSession }: AdminWorldsProps
       console.error('Admin Worlds: Error fetching tags:', error)
       setSystemTags([])
     }
-  }
+  }, [])
 
   // ワールドデータを検索
-  const searchWorlds = async () => {
+  const searchWorlds = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -101,7 +101,7 @@ export default function AdminWorlds({ session: serverSession }: AdminWorldsProps
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchTerm, selectedTag])
 
   // 検索ボタンのハンドラー
   const handleSearch = () => {
@@ -138,12 +138,12 @@ export default function AdminWorlds({ session: serverSession }: AdminWorldsProps
   // コンポーネントマウント時にシステムタグを取得
   useEffect(() => {
     fetchSystemTags()
-  }, [])
+  }, [fetchSystemTags])
 
   // 検索条件が変更されたら検索実行
   useEffect(() => {
     searchWorlds()
-  }, [searchTerm, selectedTag])
+  }, [searchWorlds])
 
   return (
     <>

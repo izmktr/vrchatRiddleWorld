@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useSession, signIn } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 
 interface DashboardStats {
@@ -21,6 +21,23 @@ function isAdmin(email?: string | null): boolean {
   return adminEmails.includes(email)
 }
 
+const formatCacheTimestamp = (dateString: string): string => {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return '不明'
+
+  const diffMs = Date.now() - date.getTime()
+  const hours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)))
+  const hoursAgo = `${hours}時間前`
+  const formatted = date.toLocaleString('ja-JP', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  return `${formatted} (${hoursAgo})`
+}
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -33,26 +50,13 @@ export default function AdminDashboard() {
     errorCount: 0
   })
   const [loading, setLoading] = useState(true)
+  const [isClearingCache, setIsClearingCache] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [adminCheckLoading, setAdminCheckLoading] = useState(true)
 
   // 認証状態の確認
-  useEffect(() => {
-    if (status === 'loading') return // まだ読み込み中
-
-    if (status === 'unauthenticated') {
-      signIn() // 未認証の場合はサインインページにリダイレクト
-      return
-    }
-
-    if (session?.user?.email) {
-      // 管理者権限をAPIで確認
-      checkAdminStatus()
-    }
-  }, [session, status])
-
   // 管理者権限の確認
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/check')
       if (response.ok) {
@@ -72,21 +76,31 @@ export default function AdminDashboard() {
     } finally {
       setAdminCheckLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (status === 'loading') return // まだ読み込み中
+
+    if (status === 'unauthenticated') {
+      signIn() // 未認証の場合はサインインページにリダイレクト
+      return
+    }
+
+    if (session?.user?.email) {
+      // 管理者権限をAPIで確認
+      checkAdminStatus()
+    }
+  }, [session, status, checkAdminStatus])
 
   // 統計情報を取得
-  useEffect(() => {
-    if (isAdminUser && !adminCheckLoading) {
-      fetchDashboardStats()
-    }
-  }, [isAdminUser, adminCheckLoading])
-
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     try {
       setLoading(true)
       
       // ワールド数を取得（エラーハンドリング強化）
       let totalWorlds = 0
+      let totalUsers = 0
+      let lastScrapingDate: string | null = null
 
       try {
         const worldsResponse = await fetch('/api/worlds?page=1&limit=1')
@@ -101,10 +115,23 @@ export default function AdminDashboard() {
         // エラーでも続行
       }
 
+      try {
+        const statsResponse = await fetch('/api/admin/stats')
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json()
+          totalUsers = statsData.totalUsers || 0
+          lastScrapingDate = statsData.lastWorldsCacheAt || null
+        } else {
+          console.warn('Admin stats API returned:', statsResponse.status)
+        }
+      } catch (statsError) {
+        console.warn('Failed to fetch admin stats:', statsError)
+      }
+
       const newStats = {
         totalWorlds,
-        totalUsers: 0, // 後で実装
-        lastScrapingDate: null, // 後で実装
+        totalUsers,
+        lastScrapingDate,
         errorCount: 0 // 後で実装
       }
       
@@ -121,7 +148,36 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (isAdminUser && !adminCheckLoading) {
+      fetchDashboardStats()
+    }
+  }, [isAdminUser, adminCheckLoading, fetchDashboardStats])
+
+  const handleClearWorldsCache = useCallback(async () => {
+    try {
+      setIsClearingCache(true)
+      const response = await fetch('/api/admin/cache/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prefix: 'worlds' })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Cache clear failed: ${response.status}`)
+      }
+
+      await fetchDashboardStats()
+    } catch (error) {
+      console.error('Failed to clear worlds cache:', error)
+    } finally {
+      setIsClearingCache(false)
+    }
+  }, [fetchDashboardStats])
 
   // ローディング中の表示
   if (status === 'loading' || adminCheckLoading) {
@@ -232,18 +288,15 @@ export default function AdminDashboard() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        最終スクレイピング
+                        最終キャッシュ
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
                         {loading ? (
                           <div className="animate-pulse bg-gray-200 h-6 w-20 rounded"></div>
                         ) : stats.lastScrapingDate ? (
-                          new Date(stats.lastScrapingDate).toLocaleDateString('ja-JP', {
-                            month: 'short',
-                            day: 'numeric'
-                          })
+                          formatCacheTimestamp(stats.lastScrapingDate)
                         ) : (
-                          '未実行'
+                          '未キャッシュ'
                         )}
                       </dd>
                     </dl>
@@ -382,9 +435,11 @@ export default function AdminDashboard() {
                 </button>
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  onClick={handleClearWorldsCache}
+                  disabled={isClearingCache}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  🧹 キャッシュクリア
+                  {isClearingCache ? '🧹 クリア中...' : '🧹 worldsキャッシュクリア'}
                 </button>
               </div>
             </div>

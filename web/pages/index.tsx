@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Head from 'next/head'
 import Image from 'next/image'
@@ -103,19 +103,7 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    fetchTags()
-  }, [])
-
-  useEffect(() => {
-    fetchWorlds()
-  }, [selectedTag, page, actualSearchQuery, selectedAuthor, sortKey, selectedStatus])
-
-  useEffect(() => {
-    fetchStatusCounts()
-  }, [selectedTag, actualSearchQuery, selectedAuthor, sortKey, session])
-
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     try {
       if (process.env.NODE_ENV === 'development') {
         console.log('Fetching tags from /api/tags...')
@@ -146,9 +134,9 @@ export default function Home() {
       // エラー時もデフォルト値を設定してアプリケーションを継続
       setTags([])
     }
-  }
+  }, [])
 
-  const fetchWorlds = async () => {
+  const fetchWorlds = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -178,9 +166,9 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, sortKey, selectedTag, actualSearchQuery, selectedAuthor, session?.user, selectedStatus])
 
-  const fetchStatusCounts = async () => {
+  const fetchStatusCounts = useCallback(async () => {
     if (!session?.user) {
       setStatusCounts({
         all: 0,
@@ -229,7 +217,19 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching status counts:', error)
     }
-  }
+  }, [session?.user, selectedTag, actualSearchQuery, selectedAuthor, sortKey])
+
+  useEffect(() => {
+    fetchTags()
+  }, [fetchTags])
+
+  useEffect(() => {
+    fetchWorlds()
+  }, [fetchWorlds])
+
+  useEffect(() => {
+    fetchStatusCounts()
+  }, [fetchStatusCounts])
 
   const handleTagChange = (tag: string) => {
     setSelectedTag(tag)

@@ -1,6 +1,7 @@
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import { Fragment } from 'react'
+import Image from 'next/image'
 import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline'
 import { useAdminMode } from '@/hooks/useAdminMode'
@@ -64,10 +65,12 @@ export default function Header() {
                 <Menu as="div" className="relative">
                   <Menu.Button className="flex items-center space-x-2 text-sm rounded-full bg-gray-100 p-2 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     {session.user?.image ? (
-                      <img
+                      <Image
                         className="h-8 w-8 rounded-full"
                         src={session.user.image}
                         alt={session.user.name || 'ユーザー'}
+                        width={32}
+                        height={32}
                       />
                     ) : (
                       <UserIcon className="h-6 w-6 text-gray-600" />

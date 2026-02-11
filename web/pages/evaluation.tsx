@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
@@ -169,7 +169,7 @@ export default function EvaluationPage() {
   }
 
   // フィルタリングのためのワールドIDを計算
-  const applyFiltering = () => {
+  const applyFiltering = useCallback(() => {
     const filtered = worlds
       .filter(world => {
         // 検索時の初期状態を使用してフィルタリング
@@ -183,13 +183,13 @@ export default function EvaluationPage() {
       .map(world => world.id)
     
     setFilteredWorldIds(new Set(filtered))
-  }
+  }, [worlds, initialWorldStates, searchTerm, statusFilter])
 
   // フィルタが変更されたときに実行
   useEffect(() => {
     applyFiltering()
     setCurrentPage(1) // フィルタが変更されたら最初のページに戻る
-  }, [searchTerm, statusFilter, initialWorldStates, worlds])
+  }, [applyFiltering])
 
   // フィルタリングとソート
   const filteredAndSortedWorlds = worlds
