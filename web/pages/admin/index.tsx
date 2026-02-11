@@ -332,53 +332,6 @@ export default function AdminDashboard() {
                   </div>
                 </Link>
 
-                <Link href="/admin/scraper" className="group">
-                  <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
-                    <div className="flex items-center">
-                      <div className="text-2xl mr-4">🔄</div>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
-                          スクレイパー管理
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          データ収集の設定・実行・ログ確認
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-
-                <Link href="/admin/logs" className="group">
-                  <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
-                    <div className="flex items-center">
-                      <div className="text-2xl mr-4">📋</div>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
-                          ログ管理
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          システムログとエラーログの確認
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-
-                <Link href="/admin/settings" className="group">
-                  <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
-                    <div className="flex items-center">
-                      <div className="text-2xl mr-4">⚙️</div>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
-                          システム設定
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          サイト設定と環境変数の管理
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
 
                 <Link href="/admin/tags" className="group">
                   <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
@@ -412,21 +365,6 @@ export default function AdminDashboard() {
                   </div>
                 </Link>
 
-                <Link href="/admin/backup" className="group">
-                  <div className="border border-gray-200 rounded-lg p-6 hover:border-indigo-500 hover:shadow-md transition-all">
-                    <div className="flex items-center">
-                      <div className="text-2xl mr-4">💾</div>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
-                          バックアップ
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          データベースのバックアップと復元
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
               </div>
             </div>
           </div>
@@ -436,12 +374,6 @@ export default function AdminDashboard() {
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">クイックアクション</h2>
               <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  🔄 スクレイピング実行
-                </button>
                 <button
                   type="button"
                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

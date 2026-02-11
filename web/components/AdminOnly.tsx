@@ -58,9 +58,6 @@ export function AdminNav() {
           <a href="/admin/users" className="hover:underline">
             ユーザー管理
           </a>
-          <a href="/admin/scraper" className="hover:underline">
-            スクレイパー
-          </a>
         </nav>
       </div>
     </div>
