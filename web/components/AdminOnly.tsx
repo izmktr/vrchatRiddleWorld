@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react'
 import { ReactNode, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useAdminMode } from '@/hooks/useAdminMode'
 
 interface AdminOnlyProps {
@@ -46,18 +47,18 @@ export function AdminNav() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <span className="font-medium">管理者モード</span>
         <nav className="flex space-x-4">
-          <a href="/" className="hover:underline">
+          <Link href="/" className="hover:underline">
             トップページ
-          </a>
-          <a href="/admin" className="hover:underline">
+          </Link>
+          <Link href="/admin" className="hover:underline">
             管理ダッシュボード
-          </a>
-          <a href="/admin/worlds" className="hover:underline">
+          </Link>
+          <Link href="/admin/worlds" className="hover:underline">
             ワールド管理
-          </a>
-          <a href="/admin/users" className="hover:underline">
+          </Link>
+          <Link href="/admin/users" className="hover:underline">
             ユーザー管理
-          </a>
+          </Link>
         </nav>
       </div>
     </div>

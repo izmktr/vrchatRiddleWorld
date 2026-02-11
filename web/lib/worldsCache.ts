@@ -73,9 +73,9 @@ export const clearWorldsCache = (prefix?: string) => {
     return
   }
 
-  for (const key of worldsCache.keys()) {
+  worldsCache.forEach((_, key) => {
     if (key.startsWith(`${prefix}|`)) {
       worldsCache.delete(key)
     }
-  }
+  })
 }
