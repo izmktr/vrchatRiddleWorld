@@ -460,40 +460,44 @@ export default function Home() {
           </div>
 
           {/* タグ検索 */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">タグ検索</h2>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleTagChange('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  selectedTag === 'all'
-                    ? 'bg-vrchat-secondary text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                すべて
-              </button>
-              {tags.length > 0 ? (
-                tags.map((tag) => (
-                  <button
-                    key={tag._id}
-                    onClick={() => handleTagChange(tag._id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      selectedTag === tag._id
-                        ? 'bg-vrchat-secondary text-white'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
-                  </button>
-                ))
-              ) : (
-                <div className="text-sm text-gray-500 px-4 py-2 bg-gray-50 rounded-lg">
-                  タグの読み込み中...
-                </div>
-              )}
+          <details className="mb-8 rounded-lg border border-gray-200 bg-white">
+            <summary className="cursor-pointer select-none px-4 py-3 text-lg font-semibold">
+              タグ検索
+            </summary>
+            <div className="px-4 pb-4">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleTagChange('all')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedTag === 'all'
+                      ? 'bg-vrchat-secondary text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  すべて
+                </button>
+                {tags.length > 0 ? (
+                  tags.map((tag) => (
+                    <button
+                      key={tag._id}
+                      onClick={() => handleTagChange(tag._id)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        selectedTag === tag._id
+                          ? 'bg-vrchat-secondary text-white'
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {tag.tagName} {tag.count !== undefined ? `(${tag.count})` : ''}
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-500 px-4 py-2 bg-gray-50 rounded-lg">
+                    タグの読み込み中...
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </details>
 
           {/* ワールド一覧 */}
           {loading ? (
