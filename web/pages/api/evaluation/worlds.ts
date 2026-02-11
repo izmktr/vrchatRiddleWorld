@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { getWorldsCache } from '@/lib/worldsCache'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 
@@ -25,10 +26,14 @@ export default async function handler(
     const userWorldInfoCollection = db.collection('user_world_info')
 
     // 全ワールドを取得（評価用なので制限なし）
-    const worlds = await collection
-      .find({})
-      .sort({ updated_at: -1 })
-      .toArray()
+    const worlds = await getWorldsCache(
+      'worlds:evaluation:list',
+      [{ sort: { updated_at: -1 } }],
+      () => collection
+        .find({})
+        .sort({ updated_at: -1 })
+        .toArray()
+    )
 
     // ユーザーの状態情報を一括取得
     const userWorldInfos = await userWorldInfoCollection

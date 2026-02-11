@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { getWorldsCache } from '@/lib/worldsCache'
 
 export default async function handler(
   req: NextApiRequest,
@@ -25,69 +26,73 @@ export default async function handler(
     const monthNum = parseInt(month as string, 10)
 
     // 指定された年月のワールドを取得
-    const worlds = await worldsCollection.aggregate([
-      {
-        $match: {
-          $or: [
-            { publicationDate: { $exists: true, $nin: [null, ''] } },
-            { created_at: { $exists: true, $nin: [null, ''] } }
-          ]
-        }
-      },
-      {
-        $addFields: {
-          pubDate: {
-            $cond: {
-              if: { $and: [
-                { $ne: ["$publicationDate", null] },
-                { $ne: ["$publicationDate", ""] }
-              ]},
-              then: {
-                $cond: {
-                  if: { $eq: [{ $type: "$publicationDate" }, "string"] },
-                  then: { $dateFromString: { dateString: "$publicationDate", onError: null } },
-                  else: "$publicationDate"
-                }
-              },
-              else: {
-                $cond: {
-                  if: { $eq: [{ $type: "$created_at" }, "string"] },
-                  then: { $dateFromString: { dateString: "$created_at", onError: null } },
-                  else: "$created_at"
+    const worlds = await getWorldsCache(
+      'worlds:timeline:month',
+      [yearNum, monthNum],
+      () => worldsCollection.aggregate([
+        {
+          $match: {
+            $or: [
+              { publicationDate: { $exists: true, $nin: [null, ''] } },
+              { created_at: { $exists: true, $nin: [null, ''] } }
+            ]
+          }
+        },
+        {
+          $addFields: {
+            pubDate: {
+              $cond: {
+                if: { $and: [
+                  { $ne: ["$publicationDate", null] },
+                  { $ne: ["$publicationDate", ""] }
+                ]},
+                then: {
+                  $cond: {
+                    if: { $eq: [{ $type: "$publicationDate" }, "string"] },
+                    then: { $dateFromString: { dateString: "$publicationDate", onError: null } },
+                    else: "$publicationDate"
+                  }
+                },
+                else: {
+                  $cond: {
+                    if: { $eq: [{ $type: "$created_at" }, "string"] },
+                    then: { $dateFromString: { dateString: "$created_at", onError: null } },
+                    else: "$created_at"
+                  }
                 }
               }
             }
           }
-        }
-      },
-      {
-        $match: {
-          pubDate: { $ne: null, $type: "date" },
-          $expr: {
-            $and: [
-              { $eq: [{ $year: "$pubDate" }, yearNum] },
-              { $eq: [{ $month: "$pubDate" }, monthNum] }
-            ]
+        },
+        {
+          $match: {
+            pubDate: { $ne: null, $type: "date" },
+            $expr: {
+              $and: [
+                { $eq: [{ $year: "$pubDate" }, yearNum] },
+                { $eq: [{ $month: "$pubDate" }, monthNum] }
+              ]
+            }
+          }
+        },
+        {
+          $sort: { pubDate: -1 }
+        },
+        {
+          $project: {
+            world_id: 1,
+            name: 1,
+            authorName: 1,
+            thumbnailImageUrl: 1,
+            imageUrl: 1,
+            publicationDate: 1,
+            visits: 1,
+            favorites: 1,
+            description: 1
           }
         }
-      },
-      {
-        $sort: { pubDate: -1 }
-      },
-      {
-        $project: {
-          world_id: 1,
-          name: 1,
-          authorName: 1,
-          thumbnailImageUrl: 1,
-          imageUrl: 1,
-          publicationDate: 1,
-          visits: 1,
-          favorites: 1,
-          description: 1
-        }
-      }
-    ]).toArray()
+      ]).toArray()
+    )
 
     // レスポンス用にデータを整形
     const formattedWorlds = worlds.map(world => ({

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { getWorldsCache } from '@/lib/worldsCache'
 import { checkApiAdminAccess } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
 
@@ -64,24 +65,28 @@ export default async function handler(
     if (sort === 'favorites') sortOption = { favorites: -1 }
 
     // ワールド一覧を取得
-    const worlds = await worldsCollection
-      .find(query)
-      .sort(sortOption)
-      .skip(skip)
-      .limit(limitNumber)
-      .project({
-        world_id: 1,
-        name: 1,
-        authorName: 1,
-        description: 1,
-        thumbnailImageUrl: 1,
-        imageUrl: 1,
-        updated_at: 1,
-        created_at: 1,
-        visits: 1,
-        favorites: 1
-      })
-      .toArray()
+    const worlds = await getWorldsCache(
+      'admin:worlds:list',
+      [query, sortOption, skip, limitNumber],
+      () => worldsCollection
+        .find(query)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNumber)
+        .project({
+          world_id: 1,
+          name: 1,
+          authorName: 1,
+          description: 1,
+          thumbnailImageUrl: 1,
+          imageUrl: 1,
+          updated_at: 1,
+          created_at: 1,
+          visits: 1,
+          favorites: 1
+        })
+        .toArray()
+    )
 
     // 各ワールドに付与されているタグ情報を取得
     const systemTagsCollection = db.collection('system_taglist') // 修正: system_tags -> system_taglist
@@ -119,7 +124,11 @@ export default async function handler(
     )
 
     // 総数を取得
-    const total = await worldsCollection.countDocuments(query)
+    const total = await getWorldsCache(
+      'admin:worlds:count',
+      [query],
+      () => worldsCollection.countDocuments(query)
+    )
 
     res.status(200).json({
       worlds: worldsWithTags,

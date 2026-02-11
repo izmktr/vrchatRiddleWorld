@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { getWorldsCache } from '@/lib/worldsCache'
 import { ObjectId } from 'mongodb'
 
 export default async function handler(
@@ -14,7 +15,11 @@ export default async function handler(
     const collection = db.collection('worlds')
 
     if (req.method === 'GET') {
-      const world = await collection.findOne({ world_id: id })
+      const world = await getWorldsCache(
+        'worlds:by-id',
+        [id],
+        () => collection.findOne({ world_id: id })
+      )
 
       if (!world) {
         return res.status(404).json({ error: 'World not found' })

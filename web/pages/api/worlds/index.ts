@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { getWorldsCache } from '@/lib/worldsCache'
 import { ObjectId } from 'mongodb'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
@@ -117,7 +118,11 @@ export default async function handler(
       }
 
       // 総数を取得
-      const total = await collection.countDocuments(query)
+      const total = await getWorldsCache(
+        'worlds:count',
+        [query],
+        () => collection.countDocuments(query)
+      )
       
       // ページネーション
       const skip = (Number(page) - 1) * Number(limit)
@@ -129,12 +134,16 @@ export default async function handler(
       if (sort === 'favorites') sortOption = { favorites: -1 }
 
       // データを取得
-      const worlds = await collection
-        .find(query)
-        .sort(sortOption)
-        .skip(skip)
-        .limit(Number(limit))
-        .toArray()
+      const worlds = await getWorldsCache(
+        'worlds:list',
+        [query, sortOption, skip, Number(limit)],
+        () => collection
+          .find(query)
+          .sort(sortOption)
+          .skip(skip)
+          .limit(Number(limit))
+          .toArray()
+      )
 
       // デバッグ用：最初のワールドの構造を確認
       if (worlds.length > 0) {

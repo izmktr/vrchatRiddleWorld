@@ -12,6 +12,7 @@ update_mongodb.txtの設計に従い、以下の処理を行います：
 import os
 import sys
 import time
+import requests
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Tuple
 
@@ -421,6 +422,32 @@ class WorldDataUpdater:
         if hasattr(self, 'mongodb'):
             self.mongodb.close()
 
+    def clear_worlds_cache(self) -> None:
+        """Web APIのワールドキャッシュをクリア"""
+        cache_url = os.getenv('CACHE_CLEAR_URL')
+        if not cache_url:
+            base_url = os.getenv('WEB_BASE_URL')
+            if base_url:
+                cache_url = f"{base_url.rstrip('/')}/api/admin/cache/clear"
+
+        token = os.getenv('CACHE_CLEAR_TOKEN')
+        if not cache_url or not token:
+            print("ℹ️  キャッシュクリアをスキップ: CACHE_CLEAR_URL/WEB_BASE_URL または CACHE_CLEAR_TOKEN 未設定")
+            return
+
+        try:
+            response = requests.post(
+                cache_url,
+                headers={'x-cache-clear-token': token},
+                timeout=10
+            )
+            if response.ok:
+                print("🧹 キャッシュクリア完了")
+            else:
+                print(f"⚠️  キャッシュクリア失敗: {response.status_code} {response.text}")
+        except requests.RequestException as e:
+            print(f"⚠️  キャッシュクリア通信エラー: {e}")
+
 
 def main():
     """メイン処理"""
@@ -436,7 +463,10 @@ def main():
         # 2. 新規ワールドの処理
         updater.process_new_worlds()
         
-        # 3. 結果サマリー
+        # 3. キャッシュクリア
+        updater.clear_worlds_cache()
+
+        # 4. 結果サマリー
         updater.print_summary()
         
     except KeyboardInterrupt:

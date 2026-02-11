@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '@/lib/mongodb'
+import { getWorldsCache } from '@/lib/worldsCache'
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,73 +16,85 @@ export default async function handler(
     const db = client.db(process.env.MONGODB_DB_NAME || 'vrcworld')
     const worldsCollection = db.collection(process.env.MONGODB_COLLECTION_NAME || 'worlds')
 
+    const { totalWorlds, sampleWorld, worldsWithPubDate, stats } = await getWorldsCache(
+      'worlds:timeline:stats',
+      [],
+      async () => {
+        const totalWorldsValue = await worldsCollection.countDocuments({})
+        const sampleWorldValue = await worldsCollection.findOne({})
+        const worldsWithPubDateValue = await worldsCollection.countDocuments({
+          publicationDate: { $exists: true, $nin: [null, ''] }
+        })
+
+        const statsValue = await worldsCollection.aggregate([
+          {
+            $match: {
+              $or: [
+                { publicationDate: { $exists: true, $nin: [null, ''] } },
+                { created_at: { $exists: true, $nin: [null, ''] } }
+              ]
+            }
+          },
+          {
+            $addFields: {
+              pubDate: {
+                $cond: {
+                  if: { $and: [
+                    { $ne: ["$publicationDate", null] },
+                    { $ne: ["$publicationDate", ""] }
+                  ]},
+                  then: {
+                    $cond: {
+                      if: { $eq: [{ $type: "$publicationDate" }, "string"] },
+                      then: { $dateFromString: { dateString: "$publicationDate", onError: null } },
+                      else: "$publicationDate"
+                    }
+                  },
+                  else: {
+                    $cond: {
+                      if: { $eq: [{ $type: "$created_at" }, "string"] },
+                      then: { $dateFromString: { dateString: "$created_at", onError: null } },
+                      else: "$created_at"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            $match: {
+              pubDate: { $ne: null, $type: "date" }
+            }
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: "$pubDate" },
+                month: { $month: "$pubDate" }
+              },
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $sort: { "_id.year": -1, "_id.month": -1 }
+          }
+        ]).toArray()
+
+        return {
+          totalWorlds: totalWorldsValue,
+          sampleWorld: sampleWorldValue,
+          worldsWithPubDate: worldsWithPubDateValue,
+          stats: statsValue
+        }
+      }
+    )
+
     // デバッグ: 全ワールド数とpublicationDateのサンプルを確認
-    const totalWorlds = await worldsCollection.countDocuments({})
-    const sampleWorld = await worldsCollection.findOne({})
-    const worldsWithPubDate = await worldsCollection.countDocuments({
-      publicationDate: { $exists: true, $nin: [null, ''] }
-    })
-    
     console.log('Debug Stats:')
     console.log('- Total worlds:', totalWorlds)
     console.log('- Worlds with publicationDate:', worldsWithPubDate)
     console.log('- Sample world fields:', sampleWorld ? Object.keys(sampleWorld) : 'No data')
     console.log('- Sample publicationDate:', sampleWorld?.publicationDate)
-
-    // 公開日でグループ化して集計
-    const stats = await worldsCollection.aggregate([
-      {
-        $match: {
-          $or: [
-            { publicationDate: { $exists: true, $nin: [null, ''] } },
-            { created_at: { $exists: true, $nin: [null, ''] } }
-          ]
-        }
-      },
-      {
-        $addFields: {
-          pubDate: {
-            $cond: {
-              if: { $and: [
-                { $ne: ["$publicationDate", null] },
-                { $ne: ["$publicationDate", ""] }
-              ]},
-              then: {
-                $cond: {
-                  if: { $eq: [{ $type: "$publicationDate" }, "string"] },
-                  then: { $dateFromString: { dateString: "$publicationDate", onError: null } },
-                  else: "$publicationDate"
-                }
-              },
-              else: {
-                $cond: {
-                  if: { $eq: [{ $type: "$created_at" }, "string"] },
-                  then: { $dateFromString: { dateString: "$created_at", onError: null } },
-                  else: "$created_at"
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        $match: {
-          pubDate: { $ne: null, $type: "date" }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$pubDate" },
-            month: { $month: "$pubDate" }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { "_id.year": -1, "_id.month": -1 }
-      }
-    ]).toArray()
 
     // 年月ごとにグループ化
     const yearlyStats: { [key: number]: { total: number; months: { [key: number]: number } } } = {}
