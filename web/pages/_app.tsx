@@ -47,8 +47,8 @@ export default function App({
     <SessionProvider 
       session={session}
       // セッション関連の設定
-      refetchInterval={5 * 60} // 5分ごとにセッション更新
-      refetchOnWindowFocus={true}
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
     >
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
