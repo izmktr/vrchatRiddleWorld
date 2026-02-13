@@ -47,6 +47,12 @@ export default function Header() {
               >
                 📅 年代別
               </Link>
+              <Link 
+                href="/nazomeguri" 
+                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+              >
+                🧭 謎めぐり
+              </Link>
               {session && (
                 <Link 
                   href="/evaluation" 
