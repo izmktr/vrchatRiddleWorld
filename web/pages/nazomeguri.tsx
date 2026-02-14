@@ -24,6 +24,8 @@ export default function NazomeguriPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [pageInput, setPageInput] = useState('1')
+  const [pageDirty, setPageDirty] = useState(false)
 
   const fetchItems = useCallback(async (targetPage: number) => {
     try {
@@ -52,12 +54,34 @@ export default function NazomeguriPage() {
     fetchItems(page)
   }, [fetchItems, page])
 
+  useEffect(() => {
+    if (!pageDirty) {
+      setPageInput(String(page))
+    }
+  }, [page, pageDirty])
+
   const handlePrev = () => {
     setPage((prev) => Math.max(1, prev - 1))
+    setPageDirty(false)
   }
 
   const handleNext = () => {
     setPage((prev) => Math.min(totalPages, prev + 1))
+    setPageDirty(false)
+  }
+
+  const handlePageInputChange = (value: string) => {
+    setPageInput(value)
+    setPageDirty(true)
+  }
+
+  const applyPageInput = () => {
+    const parsed = Number(pageInput)
+    if (Number.isNaN(parsed)) return
+    const nextPage = Math.min(Math.max(1, Math.floor(parsed)), totalPages)
+    setPage(nextPage)
+    setPageInput(String(nextPage))
+    setPageDirty(false)
   }
 
   return (
@@ -82,7 +106,26 @@ export default function NazomeguriPage() {
 
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-sm text-gray-600">ページ {page} / {totalPages}</span>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>ページ</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={pageInput}
+                onChange={(event) => handlePageInputChange(event.target.value)}
+                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm"
+              />
+              <span>/ {totalPages}</span>
+              <button
+                type="button"
+                onClick={applyPageInput}
+                disabled={!pageDirty}
+                className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                変更
+              </button>
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -151,6 +194,47 @@ export default function NazomeguriPage() {
               </table>
             </div>
           )}
+
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>ページ</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={pageInput}
+                onChange={(event) => handlePageInputChange(event.target.value)}
+                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm"
+              />
+              <span>/ {totalPages}</span>
+              <button
+                type="button"
+                onClick={applyPageInput}
+                disabled={!pageDirty}
+                className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                変更
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handlePrev}
+                disabled={page <= 1}
+                className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                前へ
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={page >= totalPages}
+                className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>
