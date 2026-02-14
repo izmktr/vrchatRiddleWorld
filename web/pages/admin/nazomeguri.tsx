@@ -300,6 +300,38 @@ export default function AdminNazomeguri() {
     setSubmitMessage('')
   }
 
+  const handleDelete = async (item: NazomeguriItem) => {
+    const label = item.worldName ? `「${item.worldName}」` : 'このデータ'
+    if (!window.confirm(`${label}を削除しますか？`)) {
+      return
+    }
+
+    try {
+      setSubmitMessage('')
+      setListLoading(true)
+      const response = await fetch(`/api/admin/nazomeguri/${item.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Delete failed')
+      }
+
+      if (editingId === item.id) {
+        resetToCreate()
+      }
+
+      await fetchDefaults()
+      await fetchList(listPage)
+      setSubmitMessage('削除しました')
+    } catch (error) {
+      console.error('Delete failed:', error)
+      setSubmitMessage('削除に失敗しました')
+    } finally {
+      setListLoading(false)
+    }
+  }
+
   const resetToCreate = () => {
     setIsEditing(false)
     setEditingId(null)
