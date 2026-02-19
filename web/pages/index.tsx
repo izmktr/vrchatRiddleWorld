@@ -556,10 +556,10 @@ export default function Home() {
                               target="_blank" 
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                              className="inline-flex items-center justify-center px-2 py-0 border-2 border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                               title="VRChatで開く"
                             >
-                              <span className="text-sm">🔗</span>
+                              <span className="font-medium">VRChat</span>
                             </a>
                           )}
                         </div>
