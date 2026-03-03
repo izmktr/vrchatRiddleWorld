@@ -29,6 +29,8 @@ interface World {
   tags: string[] // システムタグ名の配列
   systemTags?: SystemTag[] // システムタグの詳細情報
   created_at: string
+  labsPublicationDate?: string
+  publicationDate?: string
   updated_at: string
   description: string
   visits: number
@@ -595,7 +597,7 @@ export default function Home() {
                       {/* 日付 */}
                         <div className="text-xs text-gray-500">
                         <div className="flex gap-4">
-                          <span>公開日: {formatSafeDate(world.created_at)}</span>
+                          <span>公開日: {formatSafeDate(world.publicationDate || world.labsPublicationDate || world.created_at)}</span>
                           <span>更新日: {formatSafeDate(world.updated_at)}</span>
                         </div>
                         </div>
@@ -606,7 +608,7 @@ export default function Home() {
                           <span className="mr-1">👁</span>{world.visits?.toLocaleString?.() ?? world.visits ?? 0}
                         </span>
                         <span title="お気に入り数" className="flex items-center">
-                          <span className="mr-1">★</span>{world.favorites?.toLocaleString?.() ?? world.favorites ?? 0}
+                          <span className="mr-1">❤️</span>{world.favorites?.toLocaleString?.() ?? world.favorites ?? 0}
                         </span>
                       </div>
 

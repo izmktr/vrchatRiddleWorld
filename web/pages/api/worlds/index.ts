@@ -129,7 +129,7 @@ export default async function handler(
       
       // ソート条件を決定
       let sortOption: any = { updated_at: -1 }
-      if (sort === 'created_at') sortOption = { created_at: -1 }
+      if (sort === 'created_at') sortOption = { publicationDate: -1 }
       if (sort === 'visits') sortOption = { visits: -1 }
       if (sort === 'favorites') sortOption = { favorites: -1 }
 
@@ -137,12 +137,65 @@ export default async function handler(
       const worlds = await getWorldsCache(
         'worlds:list',
         [query, sortOption, skip, Number(limit)],
-        () => collection
-          .find(query)
-          .sort(sortOption)
-          .skip(skip)
-          .limit(Number(limit))
-          .toArray()
+        async () => {
+          if (sort === 'created_at') {
+            const normalizeDateExpr = (fieldName: string) => ({
+              $let: {
+                vars: { value: `$${fieldName}` },
+                in: {
+                  $cond: [
+                    {
+                      $or: [
+                        { $eq: ['$$value', null] },
+                        { $eq: ['$$value', ''] }
+                      ]
+                    },
+                    null,
+                    {
+                      $convert: {
+                        input: '$$value',
+                        to: 'date',
+                        onError: null,
+                        onNull: null
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+
+            return collection
+              .aggregate([
+                { $match: query },
+                {
+                  $addFields: {
+                    sortDate: {
+                      $ifNull: [
+                        normalizeDateExpr('publicationDate'),
+                        {
+                          $ifNull: [
+                            normalizeDateExpr('labsPublicationDate'),
+                            normalizeDateExpr('created_at')
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                { $sort: { sortDate: -1 } },
+                { $skip: skip },
+                { $limit: Number(limit) }
+              ])
+              .toArray()
+          }
+
+          return collection
+            .find(query)
+            .sort(sortOption)
+            .skip(skip)
+            .limit(Number(limit))
+            .toArray()
+        }
       )
 
       // デバッグ用：最初のワールドの構造を確認
@@ -211,6 +264,8 @@ export default async function handler(
               tagDescription: tag.tagDescription
             })),
             created_at: getValidDate(world.created_at),
+            labsPublicationDate: getValidDate(world.labsPublicationDate),
+            publicationDate: getValidDate(world.publicationDate),
             updated_at: getValidDate(world.updated_at),
             description: world.description || '',
             visits: world.visits || 0,
@@ -235,6 +290,8 @@ export default async function handler(
             tags: [],
             systemTags: [],
             created_at: '',
+            labsPublicationDate: '',
+            publicationDate: '',
             updated_at: '',
             description: 'データ処理エラー',
             visits: 0,
