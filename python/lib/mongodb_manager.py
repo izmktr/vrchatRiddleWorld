@@ -104,7 +104,8 @@ class MongoDBManager:
                 upsert=True
             )
             
-            return result.upserted_id is not None or result.modified_count > 0
+            # matched_count > 0 は既存ドキュメントが見つかり置換が試みられた場合（データが同一でmodified_count=0でも成功）
+            return result.upserted_id is not None or result.modified_count > 0 or result.matched_count > 0
             
         except Exception as e:
             logger.error(f"❌ MongoDB保存エラー: {e}")
