@@ -125,7 +125,7 @@ export default function AdminNazomeguri() {
     }
   }, [session, status, checkAdminStatus])
 
-  const fetchDefaults = useCallback(async () => {
+  const fetchDefaults = useCallback(async (): Promise<{ previous: NazomeguriPrevious | null; defaults: NazomeguriDefaults | null } | null> => {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/nazomeguri')
@@ -133,17 +133,27 @@ export default function AdminNazomeguri() {
         throw new Error('Failed to fetch defaults')
       }
       const data = await response.json()
-      setPrevious(data.previous || null)
-      setDefaults(data.defaults || null)
-      if (data.defaults && !isEditing) {
-        setCount(String(data.defaults.count))
-        const nextDate = data.previous?.date
-          ? getNextWednesdayInput(data.previous.date)
-          : formatDateInput(data.defaults.date)
+      const nextPrevious = data.previous || null
+      const nextDefaults = data.defaults || null
+
+      setPrevious(nextPrevious)
+      setDefaults(nextDefaults)
+
+      if (nextDefaults && !isEditing) {
+        setCount(String(nextDefaults.count))
+        const nextDate = nextPrevious?.date
+          ? getNextWednesdayInput(nextPrevious.date)
+          : formatDateInput(nextDefaults.date)
         setDate(nextDate)
+      }
+
+      return {
+        previous: nextPrevious,
+        defaults: nextDefaults
       }
     } catch (error) {
       console.error('Failed to fetch defaults:', error)
+      return null
     } finally {
       setLoading(false)
     }
@@ -278,9 +288,9 @@ export default function AdminNazomeguri() {
       }
 
       setSubmitMessage(isEditing ? '更新しました' : '保存しました')
-      await fetchDefaults()
+      const latestDefaults = await fetchDefaults()
       await fetchList(listPage)
-      resetToCreate()
+      resetToCreate(latestDefaults?.defaults ?? defaults, latestDefaults?.previous ?? previous)
     } catch (error) {
       console.error('Submit failed:', error)
       setSubmitMessage(isEditing ? '更新に失敗しました' : '保存に失敗しました')
@@ -318,10 +328,12 @@ export default function AdminNazomeguri() {
       }
 
       if (editingId === item.id) {
-        resetToCreate()
+        const latestDefaults = await fetchDefaults()
+        resetToCreate(latestDefaults?.defaults ?? defaults, latestDefaults?.previous ?? previous)
+      } else {
+        await fetchDefaults()
       }
 
-      await fetchDefaults()
       await fetchList(listPage)
       setSubmitMessage('削除しました')
     } catch (error) {
@@ -332,18 +344,21 @@ export default function AdminNazomeguri() {
     }
   }
 
-  const resetToCreate = () => {
+  const resetToCreate = (
+    nextDefaults: NazomeguriDefaults | null = defaults,
+    nextPrevious: NazomeguriPrevious | null = previous
+  ) => {
     setIsEditing(false)
     setEditingId(null)
     setWorldName('')
     setWorldId('')
     setComment('')
     setSubmitMessage('')
-    if (defaults) {
-      setCount(String(defaults.count))
-      const nextDate = previous?.date
-        ? getNextWednesdayInput(previous.date)
-        : formatDateInput(defaults.date)
+    if (nextDefaults) {
+      setCount(String(nextDefaults.count))
+      const nextDate = nextPrevious?.date
+        ? getNextWednesdayInput(nextPrevious.date)
+        : formatDateInput(nextDefaults.date)
       setDate(nextDate)
     } else {
       setCount('')
@@ -504,7 +519,7 @@ export default function AdminNazomeguri() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={resetToCreate}
+                onClick={() => resetToCreate()}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
               >
                 リセット
