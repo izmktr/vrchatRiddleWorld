@@ -57,6 +57,7 @@ interface Tag {
 
 export default function Home() {
   const { data: session } = useSession()
+  const isLoggedIn = Boolean(session?.user)
   const [worlds, setWorlds] = useState<World[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [selectedTag, setSelectedTag] = useState<string>('all')
@@ -148,7 +149,7 @@ export default function Home() {
         ...(selectedTag !== 'all' && { tag: selectedTag }),
         ...(actualSearchQuery.trim() && { search: actualSearchQuery.trim() }),
         ...(selectedAuthor.trim() && { author: selectedAuthor.trim() }),
-        ...(session?.user && selectedStatus !== 'all' && { userStatus: selectedStatus.toString() })
+        ...(isLoggedIn && selectedStatus !== 'all' && { userStatus: selectedStatus.toString() })
       })
       
       const response = await fetch(`/api/worlds?${params}`)
@@ -168,10 +169,10 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }, [page, sortKey, selectedTag, actualSearchQuery, selectedAuthor, session?.user, selectedStatus])
+  }, [page, sortKey, selectedTag, actualSearchQuery, selectedAuthor, isLoggedIn, selectedStatus])
 
   const fetchStatusCounts = useCallback(async () => {
-    if (!session?.user) {
+    if (!isLoggedIn) {
       setStatusCounts({
         all: 0,
         '0': 0,
@@ -219,7 +220,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching status counts:', error)
     }
-  }, [session?.user, selectedTag, actualSearchQuery, selectedAuthor, sortKey])
+  }, [isLoggedIn, selectedTag, actualSearchQuery, selectedAuthor, sortKey])
 
   useEffect(() => {
     fetchTags()
