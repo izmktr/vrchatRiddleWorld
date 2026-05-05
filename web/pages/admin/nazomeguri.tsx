@@ -251,8 +251,8 @@ export default function AdminNazomeguri() {
     event.preventDefault()
     setSubmitMessage('')
 
-    if (!worldName.trim() || !worldId.trim()) {
-      setSubmitMessage('ワールド名とワールドIDは必須です')
+    if (!worldName.trim()) {
+      setSubmitMessage('ワールド名は必須です')
       return
     }
 
