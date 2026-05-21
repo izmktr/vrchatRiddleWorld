@@ -2,6 +2,16 @@ import { useSession } from 'next-auth/react'
 import { useAdminMode } from '@/hooks/useAdminMode'
 import Link from 'next/link'
 
+// 管理ナビゲーションリンク
+const ADMIN_NAV_LINKS = [
+  { href: '/', label: 'トップページ' },
+  { href: '/admin', label: '管理ダッシュボード' },
+  { href: '/admin/new-worlds', label: '新規ワールド登録' },
+  { href: '/admin/nazomeguri', label: '謎めぐり' },
+  { href: '/admin/worlds', label: 'ワールド管理' },
+  { href: '/admin/world-tags', label: 'ワールドタグ管理' },
+]
+
 /**
  * ハイドレーション安全な管理者ナビゲーション
  */
@@ -41,27 +51,15 @@ export default function SafeAdminNav() {
         <span className="font-medium">管理者モード</span>
         <div className="flex items-center space-x-4">
           <nav className="flex space-x-4">
-            <Link href="/" className="hover:underline">
-              トップページ
-            </Link>
-            <Link href="/admin" className="hover:underline">
-              管理ダッシュボード
-            </Link>
-            <Link href="/admin/new-worlds" className="hover:underline">
-              新規ワールド登録
-            </Link>
-            <Link href="/admin/worlds" className="hover:underline">
-              ワールド管理
-            </Link>
-            <Link href="/admin/users" className="hover:underline">
-              ユーザー管理
-            </Link>
-            <Link href="/admin/tags" className="hover:underline">
-              タグ管理
-            </Link>
-            <Link href="/admin/world-tags" className="hover:underline">
-              ワールドタグ管理
-            </Link>
+            {ADMIN_NAV_LINKS.map((link) => (
+              <Link 
+                key={link.href}
+                href={link.href} 
+                className="hover:underline"
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
           <button
             onClick={toggleAdminMode}

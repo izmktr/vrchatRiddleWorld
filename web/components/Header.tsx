@@ -6,6 +6,22 @@ import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline'
 import { useAdminMode } from '@/hooks/useAdminMode'
 
+// ナビゲーションメニュー
+const NAVIGATION_MENUS = [
+  { href: '/', label: 'ワールド一覧' },
+  { href: '/timeline', label: '📅 年代別' },
+  { href: '/nazomeguri', label: '🧭 謎めぐり' },
+  { href: '/evaluation', label: '評価管理', requiresSession: true },
+]
+
+// 管理メニュー
+const ADMIN_MENUS = [
+  { href: '/admin', label: '管理ダッシュボード', icon: '🔧' },
+  { href: '/admin/worlds', label: 'ワールド管理', icon: '🌍' },
+  { href: '/admin/tags', label: 'タグ管理', icon: '🏷️' },
+  { href: '/admin/world-tags', label: 'ワールドタグ管理', icon: '🏷️' },
+]
+
 export default function Header() {
   const { data: session, status } = useSession()
   const { isActualAdmin, isAdminModeActive, isAdminModeDisabled, toggleAdminMode } = useAdminMode()
@@ -35,32 +51,18 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {/* 検索・フィルター（将来の拡張用） */}
             <nav className="hidden md:flex space-x-6">
-              <Link 
-                href="/" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-              >
-                ワールド一覧
-              </Link>
-              <Link 
-                href="/timeline" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-              >
-                📅 年代別
-              </Link>
-              <Link 
-                href="/nazomeguri" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-              >
-                🧭 謎めぐり
-              </Link>
-              {session && (
-                <Link 
-                  href="/evaluation" 
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-                >
-                  評価管理
-                </Link>
-              )}
+              {NAVIGATION_MENUS.map((menu) => {
+                if (menu.requiresSession && !session) return null
+                return (
+                  <Link 
+                    key={menu.href}
+                    href={menu.href} 
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                  >
+                    {menu.label}
+                  </Link>
+                )
+              })}
             </nav>
 
             {/* ユーザー認証 */}
@@ -114,58 +116,21 @@ export default function Header() {
                       {/* 管理者メニュー */}
                       {isAdminModeActive && (
                         <>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                href="/admin"
-                                className={`${
-                                  active ? 'bg-red-50' : ''
-                                } flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:text-red-700`}
-                              >
-                                <span className="text-base">🔧</span>
-                                <span>管理ダッシュボード</span>
-                              </Link>
-                            )}
-                          </Menu.Item>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                href="/admin/worlds"
-                                className={`${
-                                  active ? 'bg-red-50' : ''
-                                } flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:text-red-700`}
-                              >
-                                <span className="text-base">🌍</span>
-                                <span>ワールド管理</span>
-                              </Link>
-                            )}
-                          </Menu.Item>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                href="/admin/tags"
-                                className={`${
-                                  active ? 'bg-red-50' : ''
-                                } flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:text-red-700`}
-                              >
-                                <span className="text-base">🏷️</span>
-                                <span>タグ管理</span>
-                              </Link>
-                            )}
-                          </Menu.Item>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                href="/admin/world-tags"
-                                className={`${
-                                  active ? 'bg-red-50' : ''
-                                } flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:text-red-700`}
-                              >
-                                <span className="text-base">🏷️</span>
-                                <span>ワールドタグ管理</span>
-                              </Link>
-                            )}
-                          </Menu.Item>
+                          {ADMIN_MENUS.map((menu) => (
+                            <Menu.Item key={menu.href}>
+                              {({ active }) => (
+                                <Link
+                                  href={menu.href}
+                                  className={`${
+                                    active ? 'bg-red-50' : ''
+                                  } flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:text-red-700`}
+                                >
+                                  <span className="text-base">{menu.icon}</span>
+                                  <span>{menu.label}</span>
+                                </Link>
+                              )}
+                            </Menu.Item>
+                          ))}
                           <div className="border-b border-gray-100 my-1"></div>
                         </>
                       )}
