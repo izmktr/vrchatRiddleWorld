@@ -90,6 +90,8 @@ export default function AdminNazomeguri() {
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
 
+  const [visitHistoryMap, setVisitHistoryMap] = useState<Record<string, number[]>>({})
+
   const checkAdminStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/check')
@@ -165,6 +167,24 @@ export default function AdminNazomeguri() {
     }
   }, [isAdminUser, adminCheckLoading, fetchDefaults])
 
+  const fetchVisitHistory = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ page: '1', limit: '2000' })
+      const response = await fetch(`/api/admin/nazomeguri/list?${params.toString()}`)
+      if (!response.ok) return
+      const data = await response.json()
+      const map: Record<string, number[]> = {}
+      for (const item of (data.items || []) as NazomeguriItem[]) {
+        if (!item.worldId) continue
+        if (!map[item.worldId]) map[item.worldId] = []
+        if (item.count !== null) map[item.worldId].push(item.count)
+      }
+      setVisitHistoryMap(map)
+    } catch (error) {
+      console.error('Failed to fetch visit history:', error)
+    }
+  }, [])
+
   const fetchList = useCallback(async (page: number) => {
     try {
       setListLoading(true)
@@ -193,6 +213,12 @@ export default function AdminNazomeguri() {
       fetchList(listPage)
     }
   }, [isAdminUser, adminCheckLoading, fetchList, listPage])
+
+  useEffect(() => {
+    if (isAdminUser && !adminCheckLoading) {
+      fetchVisitHistory()
+    }
+  }, [isAdminUser, adminCheckLoading, fetchVisitHistory])
 
   useEffect(() => {
     if (!listPageDirty) {
@@ -241,6 +267,14 @@ export default function AdminNazomeguri() {
     setWorldName(world.name)
     setWorldId(world.id)
     setShowSearchModal(false)
+    const counts = visitHistoryMap[world.id]
+    if (counts && counts.length > 0) {
+      const sorted = [...counts].sort((a, b) => a - b)
+      const label = sorted.map((c) => `第${c}回`).join('・')
+      setSubmitMessage(`${label}で訪問済みです`)
+    } else {
+      setSubmitMessage('')
+    }
   }
 
   const handleResetWorldId = () => {
@@ -290,6 +324,7 @@ export default function AdminNazomeguri() {
       setSubmitMessage(isEditing ? '更新しました' : '保存しました')
       const latestDefaults = await fetchDefaults()
       await fetchList(listPage)
+      await fetchVisitHistory()
       resetToCreate(latestDefaults?.defaults ?? defaults, latestDefaults?.previous ?? previous)
     } catch (error) {
       console.error('Submit failed:', error)
@@ -335,6 +370,7 @@ export default function AdminNazomeguri() {
       }
 
       await fetchList(listPage)
+      await fetchVisitHistory()
       setSubmitMessage('削除しました')
     } catch (error) {
       console.error('Delete failed:', error)
@@ -512,7 +548,7 @@ export default function AdminNazomeguri() {
           </div>
 
           {submitMessage && (
-            <div className="text-sm text-blue-600">{submitMessage}</div>
+            <div className={`text-sm ${submitMessage.includes('訪問済み') ? 'text-amber-600 font-medium' : 'text-blue-600'}`}>{submitMessage}</div>
           )}
 
           <div className="flex justify-end">
@@ -698,7 +734,14 @@ export default function AdminNazomeguri() {
                     onClick={() => handleSelectWorld(world)}
                     className="w-full text-left py-3 hover:bg-gray-50 px-2"
                   >
-                    <div className="text-sm font-medium text-gray-900">{world.name}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-medium text-gray-900">{world.name}</div>
+                      {visitHistoryMap[world.id] && visitHistoryMap[world.id].length > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                          {[...visitHistoryMap[world.id]].sort((a, b) => a - b).map((c) => `第${c}回`).join('・')}に訪問済み
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500">{world.authorName}</div>
                     <div className="text-xs text-gray-400">{world.id}</div>
                   </button>
