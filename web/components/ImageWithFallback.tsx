@@ -38,12 +38,6 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       ? `/api/proxy-image?url=${encodeURIComponent(src)}`
       : src
     
-    console.log(`[ImageWithFallback] Loading image:`, { 
-      originalSrc: src, 
-      needsProxy, 
-      finalUrl: imageUrl 
-    })
-    
     // 初期状態をリセット
     setHasError(false)
     setIsLoading(true)
@@ -52,26 +46,19 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   }, [src, needsProxy])
 
   const handleError = () => {
-    console.warn(`[ImageWithFallback] Failed to load image (attempt ${retryCount + 1}):`, src)
-    console.warn(`[ImageWithFallback] Image src was:`, imgSrc)
-    
     // VRChatの画像で1回目の失敗の場合、元のURLで直接試す
     if (needsProxy && retryCount === 0) {
-      console.log(`[ImageWithFallback] Retrying with direct URL:`, src)
       setRetryCount(1)
       setImgSrc(src)
       return
     }
     
     // 2回目の失敗またはVRChat以外の画像の場合、エラー状態に
-    console.error(`[ImageWithFallback] Final error state for:`, src)
     setHasError(true)
     setIsLoading(false)
   }
 
   const handleLoad = () => {
-    console.log(`[ImageWithFallback] Successfully loaded image:`, src)
-    console.log(`[ImageWithFallback] Loaded image src was:`, imgSrc)
     setIsLoading(false)
     setHasError(false)
   }
