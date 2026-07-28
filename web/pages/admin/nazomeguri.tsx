@@ -281,6 +281,13 @@ export default function AdminNazomeguri() {
     setWorldId('')
   }
 
+  const handleWorldNameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      handleSearch()
+    }
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setSubmitMessage('')
@@ -505,6 +512,7 @@ export default function AdminNazomeguri() {
                 type="text"
                 value={worldName}
                 onChange={(event) => setWorldName(event.target.value)}
+                onKeyDown={handleWorldNameKeyDown}
                 className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               />
               <button
