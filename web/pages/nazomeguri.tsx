@@ -12,6 +12,11 @@ type NazomeguriItem = {
   comment: string
 }
 
+type NextNazomeguriItem = NazomeguriItem & {
+  thumbnailImageUrl: string
+  vrchatUrl: string
+}
+
 const formatDate = (value: string | null): string => {
   if (!value) return '-'
   const date = new Date(value)
@@ -21,6 +26,7 @@ const formatDate = (value: string | null): string => {
 
 export default function NazomeguriPage() {
   const [items, setItems] = useState<NazomeguriItem[]>([])
+  const [nextItem, setNextItem] = useState<NextNazomeguriItem | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -41,10 +47,12 @@ export default function NazomeguriPage() {
       const data = await response.json()
       setItems(data.items || [])
       setTotalPages(data.totalPages || 1)
+      setNextItem(data.nextItem || null)
     } catch (error) {
       console.error('Failed to fetch nazomeguri:', error)
       setItems([])
       setTotalPages(1)
+      setNextItem(null)
     } finally {
       setLoading(false)
     }
@@ -99,12 +107,66 @@ export default function NazomeguriPage() {
             <h1 className="text-2xl font-bold text-gray-900">謎めぐり一覧</h1>
             <p className="text-sm text-gray-600">回数の降順で表示します。</p>
           </div>
-          <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
+          <Link href="/" className="text-sm text-vrchat-secondary hover:text-orange-600">
             ← トップへ戻る
           </Link>
         </div>
 
         <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-bold text-vrchat-primary mb-3">次回 謎めぐり</h2>
+            {nextItem ? (
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-xl sm:text-2xl font-semibold text-gray-900 text-center">
+                  {formatDate(nextItem.date)} {nextItem.worldName || '-'}
+                </p>
+                <div className="w-full max-w-2xl mx-auto">
+                  {nextItem.thumbnailImageUrl ? (
+                    <img
+                      src={nextItem.thumbnailImageUrl}
+                      alt={nextItem.worldName || 'ワールドサムネイル'}
+                      className="w-full aspect-video rounded border border-gray-200 object-cover bg-white"
+                    />
+                  ) : (
+                    <div className="w-full aspect-video rounded border border-gray-200 bg-white grid place-items-center text-sm text-gray-500">
+                      サムネイルなし
+                    </div>
+                  )}
+                </div>
+                <div className="w-full max-w-2xl mx-auto flex flex-wrap items-center justify-center gap-3">
+                  {nextItem.vrchatUrl ? (
+                    <a
+                      href={nextItem.vrchatUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      VRChat
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center justify-center rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white">
+                      VRChatリンクなし
+                    </span>
+                  )}
+                  {nextItem.worldId ? (
+                    <Link
+                      href={`/world/${nextItem.worldId}`}
+                      className="inline-flex items-center justify-center rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      個別ページ
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center justify-center rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white">
+                      個別ページなし
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">当日以降の予定はありません。</p>
+            )}
+          </div>
+
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>ページ</span>
@@ -176,7 +238,7 @@ export default function NazomeguriPage() {
                           {item.worldId && (
                             <Link
                               href={`/world/${item.worldId}`}
-                              className="text-blue-600 hover:text-blue-800"
+                              className="text-vrchat-secondary hover:text-orange-600"
                               aria-label="個別ページを開く"
                               title="個別ページを開く"
                             >

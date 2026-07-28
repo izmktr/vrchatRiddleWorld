@@ -25,6 +25,7 @@ export default async function handler(
     const client = await clientPromise
     const db = client.db(process.env.MONGODB_DB_NAME || 'vrcworld')
     const collection = db.collection('nazomeguri')
+    const worldsCollection = db.collection('worlds')
 
     const total = await collection.countDocuments({})
     const items = await collection
@@ -43,12 +44,48 @@ export default async function handler(
       comment: item.comment || ''
     }))
 
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const upcoming = await collection
+      .find({ date: { $gte: todayStart } })
+      .sort({ date: 1, count: 1 })
+      .limit(1)
+      .toArray()
+
+    const nextRaw = upcoming[0]
+    let nextItem = null
+
+    if (nextRaw) {
+      const worldId = nextRaw.worldId || ''
+      const world = worldId
+        ? await worldsCollection.findOne({ world_id: worldId })
+        : null
+
+      const sourceUrl = typeof world?.source_url === 'string' ? world.source_url : ''
+      const vrchatUrl = sourceUrl || (worldId ? `https://vrchat.com/home/world/${worldId}` : '')
+
+      nextItem = {
+        id: nextRaw._id?.toString?.() ?? '',
+        count: typeof nextRaw.count === 'number' ? nextRaw.count : null,
+        date: nextRaw.date ? new Date(nextRaw.date).toISOString() : null,
+        worldName: nextRaw.worldName || '',
+        worldId,
+        comment: nextRaw.comment || '',
+        thumbnailImageUrl: (typeof world?.thumbnailImageUrl === 'string' && world.thumbnailImageUrl) ||
+          (typeof world?.imageUrl === 'string' && world.imageUrl) ||
+          '',
+        vrchatUrl
+      }
+    }
+
     return res.status(200).json({
       page,
       limit,
       total,
       totalPages: Math.ceil(total / limit),
-      items: formatted
+      items: formatted,
+      nextItem
     })
   } catch (error) {
     console.error('Nazomeguri public API error:', error)
