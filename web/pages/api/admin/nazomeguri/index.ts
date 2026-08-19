@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { ObjectId } from 'mongodb'
 import clientPromise from '@/lib/mongodb'
 import { checkApiAdminAccess } from '@/lib/auth'
 
@@ -69,7 +70,7 @@ export default async function handler(
     }
 
     if (req.method === 'POST') {
-      const { count, date, worldName, worldId, comment } = req.body ?? {}
+      const { count, date, worldName, worldId, comment, candidateId } = req.body ?? {}
 
       if (typeof count !== 'number' || Number.isNaN(count)) {
         return res.status(400).json({ error: 'count must be a number' })
@@ -84,15 +85,33 @@ export default async function handler(
         return res.status(400).json({ error: 'date is invalid' })
       }
 
+      let normalizedCandidateId: ObjectId | null = null
+      if (typeof candidateId === 'string' && candidateId.trim()) {
+        try {
+          normalizedCandidateId = new ObjectId(candidateId)
+        } catch (error) {
+          return res.status(400).json({ error: 'candidateId is invalid' })
+        }
+      }
+
       const payload = {
         count,
         date: parsedDate,
         worldName,
         worldId,
-        comment: typeof comment === 'string' ? comment : ''
+        comment: typeof comment === 'string' ? comment : '',
+        candidateId: normalizedCandidateId,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
 
       const result = await collection.insertOne(payload)
+
+      if (normalizedCandidateId) {
+        const candidatesCollection = db.collection('nazomeguri_candidates')
+        await candidatesCollection.deleteOne({ _id: normalizedCandidateId })
+      }
+
       return res.status(201).json({
         id: result.insertedId.toString()
       })

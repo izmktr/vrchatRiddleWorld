@@ -24,6 +24,14 @@ type NazomeguriWorld = {
   authorName: string
 }
 
+type NazomeguriCandidate = {
+  id: string
+  worldName: string
+  worldId: string
+  comment: string
+  createdAt: string | null
+}
+
 type NazomeguriItem = {
   id: string
   count: number | null
@@ -31,6 +39,7 @@ type NazomeguriItem = {
   worldName: string
   worldId: string
   comment: string
+  candidateId?: string | null
 }
 
 const formatDateInput = (value: string): string => {
@@ -91,6 +100,10 @@ export default function AdminNazomeguri() {
   const [submitMessage, setSubmitMessage] = useState('')
 
   const [visitHistoryMap, setVisitHistoryMap] = useState<Record<string, number[]>>({})
+  const [candidateList, setCandidateList] = useState<NazomeguriCandidate[]>([])
+  const [candidateLoading, setCandidateLoading] = useState(false)
+  const [showCandidateModal, setShowCandidateModal] = useState(false)
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
 
   const checkAdminStatus = useCallback(async () => {
     try {
@@ -185,6 +198,23 @@ export default function AdminNazomeguri() {
     }
   }, [])
 
+  const fetchCandidates = useCallback(async () => {
+    try {
+      setCandidateLoading(true)
+      const response = await fetch('/api/admin/nazomeguri/candidates')
+      if (!response.ok) {
+        throw new Error('Failed to fetch candidates')
+      }
+      const data = await response.json()
+      setCandidateList((data.items || []) as NazomeguriCandidate[])
+    } catch (error) {
+      console.error('Failed to fetch candidates:', error)
+      setCandidateList([])
+    } finally {
+      setCandidateLoading(false)
+    }
+  }, [])
+
   const fetchList = useCallback(async (page: number) => {
     try {
       setListLoading(true)
@@ -217,8 +247,9 @@ export default function AdminNazomeguri() {
   useEffect(() => {
     if (isAdminUser && !adminCheckLoading) {
       fetchVisitHistory()
+      fetchCandidates()
     }
-  }, [isAdminUser, adminCheckLoading, fetchVisitHistory])
+  }, [isAdminUser, adminCheckLoading, fetchVisitHistory, fetchCandidates])
 
   useEffect(() => {
     if (!listPageDirty) {
@@ -281,6 +312,80 @@ export default function AdminNazomeguri() {
     setWorldId('')
   }
 
+  const handleSaveCandidate = async () => {
+    const nextWorldName = worldName.trim()
+    const nextWorldId = worldId.trim()
+
+    if (!nextWorldName || !nextWorldId) {
+      setSubmitMessage('候補を保存するにはワールド名とワールドIDが必要です')
+      return
+    }
+
+    try {
+      setSubmitLoading(true)
+      const response = await fetch('/api/admin/nazomeguri/candidates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          worldName: nextWorldName,
+          worldId: nextWorldId,
+          comment: comment.trim()
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('候補の保存に失敗しました')
+      }
+
+      setSubmitMessage('候補として保存しました')
+      await fetchCandidates()
+    } catch (error) {
+      console.error('Candidate save failed:', error)
+      setSubmitMessage('候補の保存に失敗しました')
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const handleOpenCandidateModal = async () => {
+    await fetchCandidates()
+    setShowCandidateModal(true)
+  }
+
+  const handleSelectCandidate = (candidate: NazomeguriCandidate) => {
+    setSelectedCandidateId(candidate.id)
+    setWorldName(candidate.worldName)
+    setWorldId(candidate.worldId)
+    setComment(candidate.comment)
+    setShowCandidateModal(false)
+    setSubmitMessage('候補を選択しました')
+  }
+
+  const handleDeleteCandidate = async (candidate: NazomeguriCandidate) => {
+    const label = candidate.worldName ? `「${candidate.worldName}」` : 'この候補'
+    if (!window.confirm(`${label}を候補から削除しますか？`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/nazomeguri/candidates/${candidate.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Candidate delete failed')
+      }
+
+      await fetchCandidates()
+      setSubmitMessage('候補を削除しました')
+    } catch (error) {
+      console.error('Delete candidate failed:', error)
+      setSubmitMessage('候補の削除に失敗しました')
+    }
+  }
+
   const handleWorldNameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
@@ -320,7 +425,8 @@ export default function AdminNazomeguri() {
           date: new Date(date).toISOString(),
           worldName: worldName.trim(),
           worldId: worldId.trim(),
-          comment: comment.trim()
+          comment: comment.trim(),
+          candidateId: selectedCandidateId || null
         })
       })
 
@@ -329,6 +435,9 @@ export default function AdminNazomeguri() {
       }
 
       setSubmitMessage(isEditing ? '更新しました' : '保存しました')
+      if (!isEditing && selectedCandidateId) {
+        await fetchCandidates()
+      }
       const latestDefaults = await fetchDefaults()
       await fetchList(listPage)
       await fetchVisitHistory()
@@ -349,6 +458,7 @@ export default function AdminNazomeguri() {
     setWorldName(item.worldName)
     setWorldId(item.worldId)
     setComment(item.comment)
+    setSelectedCandidateId(item.candidateId || null)
     setSubmitMessage('')
   }
 
@@ -396,6 +506,7 @@ export default function AdminNazomeguri() {
     setWorldName('')
     setWorldId('')
     setComment('')
+    setSelectedCandidateId(null)
     setSubmitMessage('')
     if (nextDefaults) {
       setCount(String(nextDefaults.count))
@@ -522,6 +633,21 @@ export default function AdminNazomeguri() {
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
               >
                 {searchLoading ? '検索中...' : '検索して入力'}
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenCandidateModal}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50"
+              >
+                候補から選ぶ
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCandidate}
+                disabled={submitLoading}
+                className="inline-flex items-center px-3 py-2 border border-indigo-300 rounded-md text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50"
+              >
+                候補として保存
               </button>
             </div>
           </div>
@@ -753,6 +879,54 @@ export default function AdminNazomeguri() {
                     <div className="text-xs text-gray-500">{world.authorName}</div>
                     <div className="text-xs text-gray-400">{world.id}</div>
                   </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showCandidateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">候補一覧</h3>
+              <button
+                type="button"
+                onClick={() => setShowCandidateModal(false)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                閉じる
+              </button>
+            </div>
+
+            {candidateLoading ? (
+              <div className="text-sm text-gray-500">候補を読み込み中...</div>
+            ) : candidateList.length === 0 ? (
+              <div className="text-sm text-gray-500">候補はまだありません</div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto divide-y divide-gray-200">
+                {candidateList.map((candidate) => (
+                  <div key={candidate.id} className="py-3 px-2 flex items-start justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCandidate(candidate)}
+                      className="flex-1 text-left"
+                    >
+                      <div className="text-sm font-medium text-gray-900">{candidate.worldName}</div>
+                      <div className="text-xs text-gray-500">{candidate.worldId}</div>
+                      {candidate.comment && (
+                        <div className="mt-1 text-xs text-gray-600">{candidate.comment}</div>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCandidate(candidate)}
+                      className="text-xs text-red-600 hover:text-red-800"
+                    >
+                      削除
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

@@ -46,7 +46,8 @@ export default async function handler(
       date: item.date ? new Date(item.date).toISOString() : null,
       worldName: item.worldName || '',
       worldId: item.worldId || '',
-      comment: item.comment || ''
+      comment: item.comment || '',
+      candidateId: item.candidateId ? item.candidateId.toString() : null
     }))
 
     return res.status(200).json({
